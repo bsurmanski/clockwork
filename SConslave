@@ -1,0 +1,105 @@
+import os
+import os.path
+import platform
+import shutil
+
+builddir="build/"
+srcdir="src/"
+libdir="lib/"
+libname="cw"
+
+libs = ["GLEW", "GL", "m", "lua"]
+win32_libs = ["mingw32", "glew32", "opengl32", "m", "pthreadGC2", "lua"]
+gcclibdir = []
+
+debugflags = ["-std=c99", "-D DEBUG", "-O0", "-g", "-ftrapv",\
+"-Winit-self", "-Wimplicit", "-Wreturn-type", "-Wuninitialized",\
+"-Wtrampolines", "-Wfloat-equal", "-Waddress", "-Wall", "-Wno-unused", "-pedantic",
+"-Wshadow", "-Wstrict-prototypes", "-Wmissing-prototypes", "-Wno-pointer-to-int-cast", "-Wno-int-to-pointer-cast"]
+
+releaseflags = ["-std=c99", "-O3", "-ftrapv",\
+"-Winit-self", "-Wimplicit", "-Wreturn-type", "-Wuninitialized",\
+"-Wtrampolines", "-Wfloat-equal", "-Waddress", "-Wall", "-Wno-unused", "-pedantic",
+"-Wshadow", "-Wstrict-prototypes", "-Wmissing-prototypes", "-Wno-pointer-to-int-cast", "-Wno-int-to-pointer-cast",\
+"-ftree-vectorize"]
+
+sources = \
+[\
+"util/hash.c", \
+"util/str.c", \
+"util/noise.c", \
+"util/time.c", \
+"util/algo/sort.c", \
+"util/algo/bits.c", \
+"util/math/matrix.c", \
+"util/math/scalar.c", \
+"util/math/tri.c", \
+"util/math/line.c", \
+"util/math/vec.c", \
+"util/math/convert.c", \
+"util/math/angles.c", \
+"util/script/luaapi.c", \
+"util/struct/kdtree.c", \
+"util/struct/poctree.c", \
+"util/struct/itter.c", \
+"io/file.c", \
+"io/mesh.c", \
+"io/shader.c", \
+"io/texture.c", \
+"io/tga.c", \
+]
+
+if GetOption('count'):
+    os.system('find '+ srcdir + ' -regex ".*\(c\|h\|lua\|frag\|vert\|glsl\)" | xargs wc')
+
+if GetOption('doc'):
+    os.system("doxygen doc/Doxyfile")
+
+if GetOption('test') == 'kdtree':
+    game_sources.remove('main.c')
+    game_sources.append('test/kdtest.c')
+elif GetOption('test') == 'octree':
+    game_sources.remove('main.c')
+    game_sources.append('test/octest.c')
+elif GetOption('test') == 'unit':
+    game_sources.remove('main.c')
+    game_sources.append("test/unit_test.c")
+    cflags.append('-D NO_GL')
+elif GetOption('test') == 'aero':
+    game_sources.remove('main.c')
+    game_sources.append('test/aero_test.c')
+    cflags.append('-D NO_GL')
+elif GetOption('test') == 'sort':
+    game_sources.remove('main.c')
+    game_sources.append('test/sorttest.c')
+
+if not GetOption('count') and not GetOption('doc'):
+    env = Environment(ENV=os.environ, \
+            CCFLAGS=(releaseflags if GetOption('release') else debugflags), \
+            CPPPATH=srcdir)
+
+    #if on windows
+    if env['PLATFORM'] == 'win32':
+        env['CCFLAGS'] += ["-mwindows"]
+        libs = win32_libs
+        gcclibdir += ["C:\\MinGW\\lib\\"]
+        Tool('mingw')(env)
+        Tool('gcc')(env)
+    else: #not on windows, linux
+        env['CCFLAGS'] += ['-pthread']
+        libs += ["pthread"]
+
+    env.Repository(srcdir)
+
+    for i in range(0,len(sources)):
+        sources[i] = srcdir + sources[i]
+
+    objects = [env.SharedObject(builddir + os.path.splitext(os.path.basename(source))[0], source) for source in sources]
+
+    if not GetOption('clean'):
+        f = open("cscope.files", "w")
+        [f.write(source + "\n") for source in sources]
+        f.close()
+
+    libprog = env.SharedLibrary(target=(libdir+libname), LIBS=libs, LIBPATH=gcclibdir, source=objects)
+    Default(libprog)

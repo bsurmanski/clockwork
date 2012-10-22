@@ -1,0 +1,4 @@
+lib/
+build/
+cscope.files
+.sconsign.dblite
