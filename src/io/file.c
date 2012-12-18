@@ -56,7 +56,7 @@ int file_readLine(FILE *f, char *buf, size_t cnt)
  * returns the size of the file in bytes. the file pointer position
  * will remain unchanged.
  */
-int file_size(FILE *fp)
+size_t file_size(FILE *fp)
 {
     int cur = ftell(fp);
     int size;

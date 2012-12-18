@@ -16,7 +16,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-#include "util/math/tri.h"
+#include "util/math/geom/tri.h"
 #include "util/math/vec.h"
 
 #include "mesh.h"
@@ -51,7 +51,7 @@ typedef struct mesh_edge {
 typedef struct mesh_face {
     uint16_t incidentEdge;  ///< some edge that borders this face
     uint16_t uvs[3];        ///< the UVs that this face is constituent of
-    uint8_t degenerate;
+    uint8_t degenerate;     ///< bool, if face has 0 area
     uint8_t PADDING[1];     ///< padding to 16 bytes
     hvec3 normal;           ///< the face normal. represented as a hvec3 @see hvec3
 } mesh_face;

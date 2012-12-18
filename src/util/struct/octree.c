@@ -13,7 +13,7 @@
 #include <string.h>
 
 #include "util/math/vec.h"
-#include "poctree.h"
+#include "octree.h"
 
 #define XMASK 0x01 // x bit mask for octant index
 #define YMASK 0x02 // y bit mask

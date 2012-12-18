@@ -13,7 +13,7 @@
 
 char *file_toString(char *filename);
 int file_readLine(FILE *fp, char *buf, size_t cnt);
-int file_size(FILE *fp);
+size_t file_size(FILE *fp);
 char *file_ext(char *filename);
 bool file_exists(char *filenm);
 

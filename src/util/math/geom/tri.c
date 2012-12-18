@@ -10,7 +10,7 @@
 #include <math.h>
 
 #include "util/math/vec.h"
-#include "util/math/line.h"
+#include "util/math/geom/line.h"
 
 #include "tri.h"
 

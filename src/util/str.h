@@ -32,6 +32,7 @@ bool str_endswith(str *s, str *b);
 bool str_contains(str *s, str *b);
 void str_concat(str *a, str *b);
 void str_concat_cstr(str *a, const char *b);
+int str_dist(str *a, str *b);
 
 void str_filebase(char *filenm, char *buf);
 void str_fileext(char *filename, char *buf);

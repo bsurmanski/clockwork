@@ -13,6 +13,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "const.h"
+
 #define EPSILON FLT_EPSILON
 
 typedef uint16_t*   uhvec;
@@ -32,11 +34,6 @@ typedef float       vec2[2];
 typedef float       vec3[3];
 typedef float       vec4[4];
 typedef float       quaternion[4];
-
-extern const int X;
-extern const int Y;
-extern const int Z;
-extern const int W;
 
 extern const float VEC4_ZERO[];
 extern const float VEC4_ONE[];
@@ -75,13 +72,15 @@ void    hvec3_set(hvec3 a, int16_t x, int16_t y, int16_t z);
 bool    hvec3_eq(hvec3 a, hvec3 b);
 
 // 2 Dimensional floating point vector
-void    vec2_set(vec2, float x, float y);
+void    vec2_set(vec2 a, float x, float y);
+void    vec2_scale(vec2 a, float scale);
 void    vec2_copy(const vec2 src, vec2 dst);
 float   vec2_dot(const vec2 a, const vec2 b);
 void    vec2_add(const vec2 a, const vec2 b, vec2 dest);
 void    vec2_sub(const vec2 a, const vec2 b, vec2 dest);
 float   vec2_lensq(const vec2 a);
 void    vec2_normalize(vec2 a);
+void    vec2_rand(vec2 res);
 
 // 3 Dimensional floating point vector
 void    vec3_set(vec3 a, float x, float y, float z);
@@ -103,6 +102,7 @@ void    vec3_avg(vec3 result, int n, ...);
 void    vec3_wavg(vec3 result, int n, ...);
 void    vec3_lavg(vec3 result, int n, vec *list);
 void    vec3_lwavg(vec3 result, int n, vec *list, float *weight);
+void    vec3_rand(vec3 res);
 void    vec3_print(const vec3 a);
 
 // 4 Dimensional floating point vector

@@ -5,8 +5,8 @@
  * Brandon Surmanski
  */
 
-#ifndef _POCTREE_H
-#define _POCTREE_H
+#ifndef _OCTREE_H
+#define _OCTREE_H
 
 typedef struct octree_t
 {

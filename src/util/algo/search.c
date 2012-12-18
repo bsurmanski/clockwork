@@ -5,7 +5,9 @@
  * Brandon Surmanski
  */
 
-#define offset(a,sz,b) ((void*)(((char*)(a)) + ((sz) * (b))))
+#include "search.h"
+
+#define OFFSET(a,sz,b) ((void*)(((char*)(a)) + ((sz) * (b))))
 
 static int midpoint(int a, int b)
 {
@@ -21,7 +23,7 @@ void *search_linear(const void *key, void *base,
     int i;
     for(i = 0; i < n; i++)
     {
-        void *b = offset(base, sz, i);
+        void *b = OFFSET(base, sz, i);
         if(compar(key, b) == 0)
         {
             ret = b;
@@ -43,7 +45,7 @@ void *search_binary(const void *key, void *base,
     while(low < high)
     {
         mid = midpoint(low, high);
-        void *b = offset(base, sz, mid);
+        void *b = OFFSET(base, sz, mid);
         int cmp = compar(key, b);
         if (cmp < 0)
         {
@@ -72,8 +74,8 @@ void *search_interp(const void *key, void *base,
 
     while(low < high)
     {
-        void *a = offset(base, sz, low);
-        void *b = offset(base, sz, high);
+        void *a = OFFSET(base, sz, low);
+        void *b = OFFSET(base, sz, high);
         int acmp = compar(key, a);
         int bcmp = compar(key, b);
     }

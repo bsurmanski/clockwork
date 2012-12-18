@@ -65,7 +65,7 @@ void mat4_to_quaternion(mat4 m, quaternion q)
     if(m[MAT_XX] + m[MAT_YY] + m[MAT_ZZ] > 0.0f)
     {
         float t = m[MAT_XX] + m[MAT_YY] + m[MAT_ZZ] + 1.0f; 
-        float s = frsqrt(t) * 0.5f;
+        float s = fisqrt(t) * 0.5f;
 
         q[W] = s * t;
         q[Z] = (m[MAT_YX] - m[MAT_XY]) * s;
@@ -74,7 +74,7 @@ void mat4_to_quaternion(mat4 m, quaternion q)
     } else if(m[MAT_XX] + m[MAT_YY] + m[MAT_XX] > m[MAT_ZZ])
     {
         float t = m[MAT_XX] - m[MAT_YY] - m[MAT_ZZ] + 1.0f; 
-        float s = frsqrt(t) * 0.5f;
+        float s = fisqrt(t) * 0.5f;
 
         q[X] = s * t;
         q[Y] = (m[MAT_YX] + m[MAT_XY]) * s;
@@ -83,7 +83,7 @@ void mat4_to_quaternion(mat4 m, quaternion q)
     } else if (m[MAT_YY] > m[MAT_ZZ])
     {
         float t = -m[MAT_XX] + m[MAT_YY] - m[MAT_ZZ] + 1.0f; 
-        float s = frsqrt(t) * 0.5f;
+        float s = fisqrt(t) * 0.5f;
 
         q[Y] = s * t;
         q[X] = (m[MAT_YX] + m[MAT_XY]) * s;
@@ -91,7 +91,7 @@ void mat4_to_quaternion(mat4 m, quaternion q)
         q[Z] = (m[MAT_ZY] + m[MAT_YZ]) * s;
     } else {
         float t = -m[MAT_XX] - m[MAT_YY] + m[MAT_ZZ] + 1.0f; 
-        float s = frsqrt(t) * 0.5f;
+        float s = fisqrt(t) * 0.5f;
 
         q[Z] = s * t;
         q[W] = (m[MAT_YX] + m[MAT_XY]) * s;

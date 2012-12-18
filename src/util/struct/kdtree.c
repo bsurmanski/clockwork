@@ -5,6 +5,7 @@
  * Brandon Surmanski
  */
 
+#include <alloca.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -25,8 +26,7 @@
 typedef struct kdValue 
 {
     float distsq;
-    float *pos;
-    void *val;
+    struct kdnode *node;
 } kdValue;
 
 typedef struct kdSearch
@@ -42,7 +42,6 @@ typedef struct kdnode {
     uint16_t axis;
     float *pos;
     void *val;
-    //kdValue value;
     struct kdnode *parent;
     struct kdnode *children[2]; 
 } kdnode;
@@ -67,7 +66,9 @@ static float distanceSq(float point1[], float point2[], int dim)
     float sqsum = 0.0f;
     int i;
     for(i = 0; i < dim; i++)
-    sqsum += (point1[i] - point2[i]) * (point1[i] - point2[i]);
+    {
+        sqsum += (point1[i] - point2[i]) * (point1[i] - point2[i]);
+    }
     return sqsum;
 }
 
@@ -153,11 +154,10 @@ static void kdnode_closest(kdnode *n, float point[], kdValue *val)
 {
     int side = (point[n->axis] > n->pos[n->axis] ? 1 : 0);
     float node_dsq = distanceSq(point, n->pos, n->dim); 
-    if(node_dsq < val->distsq || val->pos == NULL)
+    if(node_dsq < val->distsq || val->node == NULL)
     {
         val->distsq = node_dsq;
-        val->pos = n->pos;
-        val->val = n->val;
+        val->node = n;
     }
 
     if(n->children[side]){
@@ -181,8 +181,7 @@ static bool trySearchInsert(kdnode *n, kdSearch *s)
     if(!s->found) //list is empty
     {
         s->list[0].distsq = node_dsq;
-        s->list[0].pos = n->pos;
-        s->list[0].val = n->val;
+        s->list[0].node = n;
         s->found++;
     } else if(s->found < s->max || node_dsq < s->list[s->found-1].distsq)
     {
@@ -199,8 +198,7 @@ static bool trySearchInsert(kdnode *n, kdSearch *s)
                 memmove(&s->list[i+1], &s->list[i], (s->found - i) * sizeof(kdValue));
 
                 s->list[i].distsq = node_dsq;
-                s->list[i].pos = n->pos;
-                s->list[i].val = n->val;
+                s->list[i].node = n;
                 ret = true;
                 break;
             }
@@ -226,25 +224,6 @@ static void kdnode_closestN(kdnode *n, kdSearch *s)
             kdnode_closestN(n->children[side], s);
         }
     }
-}
-
-static kdnode *kdnode_next(kdnode *n, kdnode *prev)
-{
-    kdnode *ret = NULL;
-    if(n)
-    {
-        if(!prev && n->children[0])
-        {
-            return n->children[0]; 
-        } else if(prev != n->children[1] && n->children[1])
-        {
-            return n->children[1]; 
-        } else //already traversed children, traverse upward
-        {
-            ret = kdnode_next(n->parent, n);
-        }
-    }
-    return ret;
 }
 
 /**
@@ -290,14 +269,14 @@ void *kdtree_closest(kdtree *k, float point[], float closest[])
     if(!k || !k->root)
         return NULL;
 
-    kdValue val = {-1, NULL, NULL};
+    kdValue val = {-1, NULL};
     float distancesq = distanceSq(point, k->root->pos, k->dimensions);
     kdnode_closest(k->root, point, &val);
     if(closest)
     {
-        memcpy(closest, val.pos, sizeof(float) * k->dimensions);
+        memcpy(closest, val.node->pos, sizeof(float) * k->dimensions);
     }
-    return val.val;
+    return val.node->val;
 }
 
 int kdtree_closestN(kdtree *k, float point[], int n, void **buf, float *closest[])
@@ -325,12 +304,12 @@ int kdtree_closestN(kdtree *k, float point[], int n, void **buf, float *closest[
     {
         if(buf)
         {
-            buf[i] = search.list[i].val; 
+            buf[i] = search.list[i].node->val; 
         }
 
         if(closest)
         {
-            closest[i] = search.list[i].pos;
+            closest[i] = search.list[i].node->pos;
         }
     }
 
@@ -342,47 +321,150 @@ int kdtree_closestN(kdtree *k, float point[], int n, void **buf, float *closest[
     return search.found;
 }
 
-kdittr *kdtree_next(kdtree *k, kdittr *n)
+void kdtree_removeClosest(kdtree *k, float point[], void (*val_finalize)(void*))
 {
-    kdnode *ret = NULL;
-    if(!n)
+    kdValue val = {-1, NULL};
+    kdnode_closest(k->root, point, &val);
+    if(val.node)
     {
-        ret = k->root;
-    } else 
-    {
-        ret = kdnode_next((struct kdnode*) n, NULL);
+        //remove found node from parent
+        if(val.node->parent)
+        {
+            if(val.node->parent->children[0] == val.node)
+            {
+                val.node->parent->children[0] = NULL; 
+            } else if(val.node->parent->children[1] == val.node)
+            {
+                val.node->parent->children[1] = NULL; 
+            }
+        } else if(k->root == val.node) //remove if root
+        {
+            k->root = NULL;
+        }
+        val.node->parent = NULL;
     }
-    return (kdittr*) ret;
+    //itterate over children an re-add to kdtree
+    Iterator iter;
+    kdtree_iter_init(k, &iter);
+    iter.value = val.node;
+
+    kdnode *iternode;
+    while((iternode = iterator_next(&iter)))
+    {
+        kdtree_insert(k, iternode->pos, iternode->val);
+    }
+
+    //free old node value
+    if(val_finalize)
+    {
+        val_finalize(val.node->val);
+    }
 }
 
-static void *kdtree_itter_next(Itter *i, void *k, void *v)
+
+/**
+ * itterator next function
+ */
+static void *kdtree_iter_next(void *k, Iterator *i)
 {
     kdnode *ret = NULL;
-    if(!v)
+    if(!i->value)
     {
        ret = ((kdtree*)k)->root; 
     } else
     {
-        ret = kdnode_next((kdnode*)v, NULL);    
+        ret = kdnode_next((kdnode*)i->value, NULL);    
     }
     return ret;
 }
 
-void kdtree_itter_init(kdtree *k, Itter *i)
+static kdnode *kdnode_next(kdnode *n, kdnode *prev)
+{
+    kdnode *ret = NULL;
+    if(n)
+    {
+        if(!prev && n->children[0])
+        {
+            return n->children[0]; 
+        } else if(prev != n->children[1] && n->children[1])
+        {
+            return n->children[1]; 
+        } else //already traversed children, traverse upward
+        {
+            ret = kdnode_next(n->parent, n);
+        }
+    }
+    return ret;
+}
+
+void kdtree_iter_init(kdtree *k, Iterator *i)
 {
     assert(k);
     assert(i);
 
-    itter_init(i, k, kdtree_itter_next);
+    iterator_init(i, k, kdtree_iter_next);
     i->value = k->root;
 }
 
-void *kdtree_itter_value(Itter *i)
+void *kdtree_iter_value(Iterator *i)
 {
     return ((struct kdnode*)i->value)->val;
 }
 
-float const *kdtree_itter_position(Itter *i)
+float const *kdtree_iter_position(Iterator *i)
 {
     return ((struct kdnode*)i->value)->pos;
 }
+
+//TODO
+//
+
+/**
+ * will find the closest distance to a supplied point. the distance is passed around as
+ * cdistsq, the squared of the distance, to reduce the number of expensive sqrt opperations
+ */
+static void kdnode_closest2(kdnode *n, float point[], float *distsq, Iterator *it)
+{
+    int side = (point[n->axis] > n->pos[n->axis] ? 1 : 0);
+    float node_dsq = distanceSq(point, n->pos, n->dim); 
+    if(node_dsq < *distsq || it->iterable == NULL)
+    {
+        *distsq = node_dsq;
+        it->iterable = n;
+    }
+
+    if(n->children[side]){
+            kdnode_closest2(n->children[side], point, distsq, it);
+    }
+
+    side = knode_otherSide(side);
+    if(n->children[side]){
+        float childAxisDist = fabs(point[n->axis] - n->pos[n->axis]);
+        if(childAxisDist < *distsq){
+            kdnode_closest2(n->children[side], point, distsq, it);
+        }
+    }
+}
+
+void *kdtree_closest2(kdtree *k, float point[], Iterator *it)
+{
+    if(!k || !k->root)
+        return NULL;
+
+    //guarentee that 'it' is a valid value 
+    if(!it)
+    {
+        it = alloca(sizeof(Iterator));
+    }
+    it->iterable = k->root;
+    it->value = k->root->val;
+    //TODO: double check func below, and dec_func
+    //it->inc_func = kdtree_nextclosest;
+
+    float distancesq = distanceSq(point, k->root->pos, k->dimensions);
+    kdnode_closest2(k->root, point, &distancesq, it);
+    it->value = ((kdnode*)it->iterable)->val;
+    return it->value; //TODO
+}
+
+void *kdtree_nextclosest(kdtree *k, Iterator *it);

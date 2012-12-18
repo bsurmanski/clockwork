@@ -9,7 +9,7 @@
 #ifndef _NOISE_H
 #define _NOISE_H
 
-void noise_seed(int s);
+void noise_init(int s);
 float noise1_random(int x);
 float noise1_value(float x);
 float noise1_perlin(float x);

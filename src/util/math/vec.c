@@ -11,15 +11,11 @@
 #include <string.h> //needed for matrix mult mempcy
 #include <stdio.h>
 
+#include "util/random.h"
 #include "convert.h"
 #include "scalar.h"
 
 #include "vec.h"
-
-const int X = 0;
-const int Y = 1;
-const int Z = 2;
-const int W = 3;
 
 const float VEC4_ZERO[] = {0.0f, 0.0f, 0.0f, 0.0f};
 const float VEC4_ONE[] = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -182,6 +178,12 @@ void vec2_set(vec2 a, float x, float y)
     a[Y] = y;
 }
 
+void vec2_scale(vec2 a, float scale)
+{
+    a[X] *= scale;
+    a[Y] *= scale;
+}
+
 /**
  * copys the value of src to dest, component-wise
  */
@@ -229,6 +231,13 @@ void vec2_normalize(vec2 a)
 
     a[X] *= sqrtsumInv;
     a[Y] *= sqrtsumInv;
+}
+
+void vec2_rand(vec2 res)
+{
+    res[X] = random_random() - 0.5f;
+    res[Y] = random_random() - 0.5f;
+    vec2_normalize(res);
 }
 
 
@@ -484,6 +493,14 @@ void vec3_lwavg(vec3 result, int n, vec *list, float *weight)
         vec3_add(result, v, result);
     }
     vec3_scale(result, 1.0f/n);
+}
+
+void vec3_rand(vec3 res)
+{
+    res[X] = random_random() - 0.5f;
+    res[Y] = random_random() - 0.5f;
+    res[Z] = random_random() - 0.5f;
+    vec3_normalize(res);
 }
 
 

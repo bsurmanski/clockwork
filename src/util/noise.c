@@ -7,43 +7,65 @@
  */
 
 
+#include <stdlib.h>
 #include <math.h>
 #include <float.h>
 
+#include "util/random.h"
+#include "util/math/scalar.h"
+
 #include "noise.h"
 
-float GRAD[16][3] = 
-{
-    {1, 1, 0},
-    {-1, 1, 0},
-    {1, -1, 0},
-    {-1, -1, 0},
-    {1, 0, 1},
-    {-1, 0, 1},
-    {1, 0, -1},
-    {-1, 0, -1},
-    {0, 1, 1},
-    {0, -1, 1},
-    {0, 1, -1},
-    {0, -1, -1},
+#define DOT2(a,b,x,y) ((a)*(x)+(b)*(y))
+#define DOT3(a,b,c,x,y,z) ((a)*(x)+(b)*(y)+(c)*(z))
 
-    {1, 1, 0},
-    {-1, 1, 0},
-    {0, -1, 1},
-    {0, -1, -1}
+float DEFAULT_GRAD[16 * 3] = 
+{
+    1, 1, 0,
+    -1, 1, 0,
+    1, -1, 0,
+    -1, -1, 0,
+    1, 0, 1,
+    -1, 0, 1,
+    1, 0, -1,
+    -1, 0, -1,
+    0, 1, 1,
+    0, -1, 1,
+    0, 1, -1,
+    0, -1, -1,
+
+    1, 1, 0,
+    -1, 1, 0,
+    0, -1, 1,
+    0, -1, -1
 };
 
-static int seed = 55;
+int GRAD_MASK = 0x0F; //MUST be a power of 2 - 1
+float *GRAD = DEFAULT_GRAD;
 
-static void normalize2(float *a, float *b);
-static void normalize3(float *x, float *y, float *z);
+static int seed = 55;
 
 /**
  * sets a seed for the noise functions to follow
  */
-void noise_seed(int s)
+void noise_init(int s)
 {
     seed = s;
+    GRAD = malloc(sizeof(float) * 3 *1024);
+    GRAD_MASK = 0x03FF;
+
+    int i;
+    for(i = 0; i < 1024; i++)
+    {
+        float z = (random_random() - 0.5f) * 2.0f;
+        float r = sqrtf(1.0f - z*z);
+        float t = 4.0f * PI * (random_random() * 0.5f);
+        float x = r * cosf(t);
+        float y = r * sinf(t);
+        GRAD[i * 3 + 0] = x;
+        GRAD[i * 3 + 1] = y;
+        GRAD[i * 3 + 2] = z;
+    }
 }
 
 /**
@@ -142,20 +164,6 @@ float noise1_terbulence(float x, int n)
  */
 
 /**
- * simple vector normalization. if 'a' and 'b' are both 0,
- * an arbitarary value will be chosen.
- */
-static void normalize2(float *a, float *b)
-{
-    if((*a < FLT_EPSILON && *a > -FLT_EPSILON) && (*b < FLT_EPSILON && *b > -FLT_EPSILON)){
-        *a = 0.7f; *b = 0.3f;
-    }
-    float s = 1.0f / sqrt((*a) * (*a) + (*b) * (*b));
-    (*a) = (*a) * s;
-    (*b) = (*b) * s;
-}
-
-/**
  * random value from 2 given seeds. See noise_random1 above
  */
 inline float noise2_random(int x, int y)
@@ -178,15 +186,9 @@ static void noise2_randGrad(int x, int y, float *xo, float *yo)
     int y1 = x  * 31 + y * 71;
     x1 = ((x1 >> 17) ^ x1) & 0x7fffffff;
     y1 = ((y1 >> 17) ^ y1) & 0x7fffffff;
-    float *grad = GRAD[x1 & 15];
+    float *grad = &GRAD[(x1 * 3) & GRAD_MASK];
     *xo = grad[0];
     *yo = grad[1];
-
-    //test = ((x1 * (x1 * x1 * 24421 + 544367) + 982451653) & 0x7fffffff);
-    //double xd = (1.0f - ((x1 * (x1 * x1 * 24421 + 544367) + 982451653) & 0x7fffffff) / 1073741824.0f);
-    //double yd = (1.0f - ((y1 * (y1 * y1 * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0f);
-    //*xo = (float) xd;
-    //*yo = (float) yd;
 }
 
 /**
@@ -218,26 +220,19 @@ float noise2_perlin(float x, float y)
     float fry = y-fly;
 
 
-    float vx0, vy0;
-    noise2_randGrad(flx, fly, &vx0, &vy0);
-    normalize2(&vx0, &vy0);
+    float vx, vy;
+    float s, t, u, v;
+    noise2_randGrad(flx, fly, &vx, &vy);
+    s = DOT2(vx, vy, frx, fry);
 
-    float vx1, vy1;
-    noise2_randGrad(flx+1, fly, &vx1, &vy1); 
-    normalize2(&vx1, &vy1);
+    noise2_randGrad(flx+1, fly, &vx, &vy); 
+    t = DOT2(vx, vy, frx - 1.0f, fry);
 
-    float vx2, vy2;
-    noise2_randGrad(flx+1, fly+1, &vx2, &vy2); 
-    normalize2(&vx2, &vy2);
+    noise2_randGrad(flx+1, fly+1, &vx, &vy); 
+    u = DOT2(vx, vy, frx - 1.0f, fry - 1.0f);
 
-    float vx3, vy3;
-    noise2_randGrad(flx, fly+1, &vx3, &vy3); 
-    normalize2(&vx3, &vy3);
-
-    float s = vx0 * (frx)        + vy0 * (fry);
-    float t = vx1 * ((frx)-1.0f) + vy1 * (fry);
-    float u = vx2 * ((frx)-1.0f) + vy2 * ((fry)-1.0f);
-    float v = vx3 * (frx)        + vy3 * ((fry)-1.0f);
+    noise2_randGrad(flx, fly+1, &vx, &vy); 
+    v = DOT2(vx, vy, frx, fry - 1.0f);
 
     float px0 = lerp(s_curve(frx), s, t);
     float px1 = lerp(s_curve(frx), v, u);
@@ -281,26 +276,12 @@ static void noise3_randGrad(int x, int y, int z, float *xo, float *yo, float *zo
     x += seed;
     y += seed;
     z += seed;
-    int x1 = x  * 1 + y * 89 + z * 61;
-    int y1 = x * 71 + y * 17 + z * 53;
-    int z1 = x * 29 + y * 97 + z * 19;
-    x1 = (x1 << 17) ^ x1;
-    y1 = (y1 << 17) ^ y1;
-    z1 = (z1 << 17) ^ z1;
-    *xo = (1.0f - ((x1 * (x1 * x1 * 24421 + 544367) + 982451653) & 0x7fffffff) / 1073741824.0f);
-    *yo = (1.0f - ((y1 * (y1 * y1 * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0f);
-    *zo = (1.0f - ((z1 * (z1 * z1 * 12391 + 331999) + 479001599) & 0x7fffffff) / 1073741824.0f);
-}
-
-static void normalize3(float *x, float *y, float *z)
-{
-    float inv = ((*x)*(*x) + (*y)*(*y) + (*z)*(*z));
-    if(inv < FLT_EPSILON)
-        inv = FLT_EPSILON;
-    float s = 1.0f / inv;
-    *x *= s;
-    *y *= s;
-    *z *= s;
+    int x1 = x * 71 + y * 17 + z * 53;
+    x1 = ((x1 >> 17) ^ x1) & 0x7fffffff;
+    float *grad = &GRAD[(x1 * 3) & GRAD_MASK];
+    *xo = grad[0];
+    *yo = grad[1];
+    *zo = grad[2];
 }
 
 float noise3_perlin(float x, float y, float z)
@@ -312,58 +293,42 @@ float noise3_perlin(float x, float y, float z)
     float fry = y-fly;
     float frz = z-flz;
 
-    float vx0, vy0, vz0;
-    noise3_randGrad(flx, fly, flz, &vx0, &vy0, &vz0);
-    normalize3(&vx0, &vy0, &vz0);
+    float vx, vy, vz;
+    float o, p, q, r, s, t, u, v;
+    noise3_randGrad(flx, fly, flz, &vx, &vy, &vz);
+    o = DOT3(vx, vy, vz, frx, fry, frz);
 
-    float vx1, vy1, vz1;
-    noise3_randGrad(flx+1, fly, flz, &vx1, &vy1, &vz1); 
-    normalize3(&vx1, &vy1, &vz1);
+    noise3_randGrad(flx+1, fly, flz, &vx, &vy, &vz); 
+    p = DOT3(vx, vy, vz, frx - 1.0f, fry, frz);
 
-    float vx2, vy2, vz2;
-    noise3_randGrad(flx+1, fly+1, flz, &vx2, &vy2, &vz2); 
-    normalize3(&vx2, &vy2, &vz2);
+    noise3_randGrad(flx+1, fly+1, flz, &vx, &vy, &vz); 
+    q = DOT3(vx, vy, vz, frx - 1.0f, fry - 1.0f, frz);
 
-    float vx3, vy3, vz3;
-    noise3_randGrad(flx, fly+1, flz, &vx3, &vy3, &vz3); 
-    normalize3(&vx3, &vy3, &vz3);
+    noise3_randGrad(flx, fly+1, flz, &vx, &vy, &vz); 
+    r = DOT3(vx, vy, vz, frx, fry - 1.0f, frz);
 
-    float vx4, vy4, vz4;
-    noise3_randGrad(flx, fly, flz+1, &vx4, &vy4, &vz4);
-    normalize3(&vx4, &vy4, &vz4);
+    noise3_randGrad(flx, fly, flz+1, &vx, &vy, &vz);
+    s = DOT3(vx, vy, vz, frx, fry, frz - 1.0f);
 
-    float vx5, vy5, vz5;
-    noise3_randGrad(flx+1, fly, flz+1, &vx5, &vy5, &vz5); 
-    normalize3(&vx5, &vy5, &vz5);
+    noise3_randGrad(flx+1, fly, flz+1, &vx, &vy, &vz); 
+    t = DOT3(vx, vy, vz, frx - 1.0f, fry, frz - 1.0f);
 
-    float vx6, vy6, vz6;
-    noise3_randGrad(flx+1, fly+1, flz+1, &vx6, &vy6, &vz6); 
-    normalize3(&vx6, &vy6, &vz6);
+    noise3_randGrad(flx+1, fly+1, flz+1, &vx, &vy, &vz); 
+    u = DOT3(vx, vy, vz, frx - 1.0f, fry - 1.0f, frz - 1.0f);
 
-    float vx7, vy7, vz7;
-    noise3_randGrad(flx, fly+1, flz+1, &vx7, &vy7, &vz7); 
-    normalize3(&vx7, &vy7, &vz7);
-
-    float o = vx0 * (frx)        + vy0 * (fry)          + vz0 * (frz);
-    float p = vx1 * ((frx)-1.0f) + vy1 * (fry)          + vz1 * (frz);
-    float q = vx2 * ((frx)-1.0f) + vy2 * ((fry)-1.0f)   + vz2 * (frz);
-    float r = vx3 * (frx)        + vy3 * ((fry)-1.0f)   + vz3 * (frz);
-
-    float s = vx4 * (frx)        + vy4 * (fry)          + vz4 * (frz-1.0f);
-    float t = vx5 * ((frx)-1.0f) + vy5 * (fry)          + vz5 * (frz-1.0f);
-    float u = vx6 * ((frx)-1.0f) + vy6 * ((fry)-1.0f)   + vz6 * (frz-1.0f);
-    float v = vx7 * (frx)        + vy7 * ((fry)-1.0f)   + vz7 * (frz-1.0f);
+    noise3_randGrad(flx, fly+1, flz+1, &vx, &vy, &vz); 
+    v = DOT3(vx, vy, vz, frx, fry - 1.0f, frz - 1.0f);
 
     float px0 = lerp(s_curve(frx), s, t);
     float px1 = lerp(s_curve(frx), v, u);
     float px2 = lerp(s_curve(frx), o, p);
-    float px3 = lerp(s_curve(frx), q, r);
+    float px3 = lerp(s_curve(frx), r, q);
 
     float py0 = lerp(s_curve(fry), px0, px1);
     float py1 = lerp(s_curve(fry), px2, px3);
 
 
-    return lerp(s_curve(frz), py0, py1);
+    return lerp(s_curve(frz), py1, py0);
 }
 
 /**
@@ -390,3 +355,4 @@ float noise3_terbulence(float x, float y, float z, int n)
         sum += fabs(noise3_perlin(x * i, y * i, z * i)/((float)i));
     return sum * 2.0f - 1.0f;
 }
+

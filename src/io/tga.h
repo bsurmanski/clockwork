@@ -8,6 +8,7 @@
 #ifndef _TGA_H
 #define _TGA_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 typedef struct tga_header {
@@ -33,9 +34,9 @@ typedef struct tga_header {
     } img;
 } tga_header;
 
-int tga_pxl_sz(tga_header *h);
-int tga_colormap_sz(tga_header *h);
-int tga_image_sz(tga_header *h);
+size_t tga_pxl_sz(tga_header *h);
+size_t tga_colormap_sz(tga_header *h);
+size_t tga_image_sz(tga_header *h);
 
 int tga_header_is_valid(tga_header *h);
 

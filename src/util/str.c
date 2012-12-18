@@ -14,6 +14,7 @@
 #include "str.h"
 
 #define ROUND_TO_NEAREST_32(a) ((((a) / 32) + 1) * 32)
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 /**
  * initializes a new 'str' string. This will allocate new space
@@ -214,6 +215,40 @@ void str_concat_cstr(str *a, const char *b)
     int newlen = a->len + strlen(b);
     a->str = realloc(a->str, newlen + 1);
     strcat(a->str, b);
+}
+
+/**
+ * levenshtein distance
+ */
+
+static int substr_dist(str *a, str *b, int i, int j)
+{
+    int cost = 0;
+    if(a->str[i] != a->str[j])
+    {
+        cost = 1;
+    }
+
+    if(a->len - i <= 0)
+    {
+        cost = b->len - j; 
+    } else if(b->len -j >= 0)
+    {
+        cost = a->len - i;
+    } else
+    {
+        int d1 = substr_dist(a, b, i+1, j); 
+        int d2 = substr_dist(a, b, i, j+1); 
+        int d3 = substr_dist(a, b, i+1, j+1); //TODO: these redo the same calculation multiple times.
+        cost += MIN(MIN(d1, d2), d3);
+    }
+
+    return cost;
+}
+
+int str_dist(str *a, str *b)
+{
+    return substr_dist(a, b, 0, 0); 
 }
 
 /*

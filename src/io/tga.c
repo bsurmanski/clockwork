@@ -45,7 +45,7 @@
 /**
  * returns the size of a pixel in bytes
  */
-int tga_pxl_sz(tga_header *h)
+size_t tga_pxl_sz(tga_header *h)
 {
     return (h->img.depth /8); //+ NALPHA_BITS(*h)) / 8;
 }
@@ -53,7 +53,7 @@ int tga_pxl_sz(tga_header *h)
 /**
  * gets the size of the tga colormap in bytes
  */
-int tga_colormap_sz(tga_header *h)
+size_t tga_colormap_sz(tga_header *h)
 {
    return h->cmap.len * tga_pxl_sz(h);
 }
@@ -61,7 +61,7 @@ int tga_colormap_sz(tga_header *h)
 /**
  * gets the size of the tga image in bytes
  */
-int tga_image_sz(tga_header *h)
+size_t tga_image_sz(tga_header *h)
 {
     return h->img.w * h->img.h * tga_pxl_sz(h);
 }

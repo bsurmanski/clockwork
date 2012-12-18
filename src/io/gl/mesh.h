@@ -15,7 +15,6 @@
 #include <stdint.h>
 
 #include "util/math/vec.h"
-#include "util/math/tri.h"
 
 #define FMT_MDL 2
 
@@ -59,8 +58,8 @@ typedef struct mesh_t {
     GLuint tex;             ///< OpenGL texture handle (GL_TEXTURE2D)
 } mesh_t;
 
-int mesh_init(mesh_t *m, const char *filenm);
-void mesh_finalize(mesh_t *m);
+int mesh_init(mesh_t *m, const char *filenm);   //
+void mesh_finalize(mesh_t *m);                  //
 
 void mesh_subdivide(mesh_t *m);
 void mesh_sphereProject(mesh_t *m);
@@ -72,15 +71,15 @@ bool mesh_contains_point(mesh_t *m, vec3 point);
 
 
 //VERT
-void mesh_vert_co(mesh_t *m, uint16_t vert_i, vec3 co);
-void mesh_vert_normal(mesh_t *m, uint16_t vert_i, vec3 norm);
+void mesh_vert_co(mesh_t *m, uint16_t vert_i, vec3 co);                 //
+void mesh_vert_normal(mesh_t *m, uint16_t vert_i, vec3 norm);           //
 int mesh_vert_faces(mesh_t *m, uint16_t vert_i, uint16_t *fbuf, int max);
 int mesh_vert_edges(mesh_t *m, uint16_t vert_i, uint16_t *ebuf, int max);
-void mesh_vert_avg(mesh_t *m, vec3 avg);
-void mesh_vert_max(mesh_t *m, vec3 max);
-void mesh_vert_min(mesh_t *m, vec3 min);
+void mesh_vert_avg(mesh_t *m, vec3 avg);                                //
+void mesh_vert_max(mesh_t *m, vec3 max);                                //
+void mesh_vert_min(mesh_t *m, vec3 min);                                //
 void mesh_vert_farthest(mesh_t *m, vec3 point, vec3 farthest);
-void mesh_vert_closest(mesh_t *m, vec3 point, vec3 closest);
+void mesh_vert_closest(mesh_t *m, vec3 point, vec3 closest);            //
 
 //EDGE
 uint16_t mesh_edge_cwEdge(mesh_t *m, uint16_t edge_i, uint16_t vert_i);
@@ -97,9 +96,9 @@ uint16_t mesh_face_ccwFace(mesh_t *m, uint16_t edge_i, uint16_t vert_i);
 uint16_t mesh_face_ccwEdge(mesh_t *m, uint16_t face_i, uint16_t edge_i);
 uint16_t mesh_face_closest(mesh_t *m, uint16_t face_start, vec3 point);
 int mesh_face_indexOf_vert(mesh_t *m, uint16_t face_i, uint16_t vert_i);
-int mesh_face_verts(mesh_t *m, uint16_t face_i, uint16_t *vbuf, int max);
+int mesh_face_verts(mesh_t *m, uint16_t face_i, uint16_t *vbuf, int max);   //
 int mesh_face_edges(mesh_t *m, uint16_t face_i, uint16_t *ebuf, int max); 
 int mesh_face_faces(mesh_t *m, uint16_t face_i, uint16_t *fbuf, int max);
-void mesh_face_normal(mesh_t *m, uint16_t face_i, vec3 normalbuf);
+void mesh_face_normal(mesh_t *m, uint16_t face_i, vec3 normalbuf);          //
 
 #endif

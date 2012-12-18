@@ -5,6 +5,8 @@
  * Brandon Surmanski
  */
 
+#include <math.h>
+#include <stdlib.h>
 #include "scalar.h"
 
 /**
@@ -104,7 +106,7 @@ float fsq(float val)
  * recipricol squareroot approximation
  * @returns 1/sqrt(val), or a close approximation
  */
-float frsqrt(float val)
+float fisqrt(float val)
 {
 #ifdef HIGH_PRECISION
     float r = 1.0 / sqrt(val);
@@ -133,6 +135,21 @@ float fclamp(float val, float a, float b)
     } else if (val > b)
     {
         ret = b;
+    }
+    return ret;
+}
+
+/**
+ * similar to modulus, except that negative numbers will
+ * wrap around from max. eg: if max is 25, and val is -3,
+ * then 22 will be returned.
+ */
+float fwrap(float val, float max)
+{
+    float ret = fmodf(val, max);
+    if(ret < 0)
+    {
+        ret = max + ret; 
     }
     return ret;
 }
@@ -199,3 +216,28 @@ float flwavg(int n, float *list, float *weights)
     return ret / (float) n;
 }
 
+int iclamp(int val, int a, int b)
+{
+    int ret = val;
+    if(val < a)
+    {
+        ret = a;
+    } else if (val > b)
+    {
+        ret = b;
+    }
+    return ret;
+}
+
+int iwrap(int val, int max)
+{
+    int ret = val;
+    if(abs(ret) > max)
+    {
+        ret = val % max;
+    } else if(ret < 0)
+    {
+        ret = max + ret;
+    }
+    return ret;
+}
