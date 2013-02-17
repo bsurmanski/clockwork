@@ -178,7 +178,12 @@ void mat4_scale(mat4 m, float sx, float sy, float sz)
     sMat[MAT_YY] = sy;
     sMat[MAT_ZZ] = sz;
 
-    mat4_mult(sMat, m);
+    mat4_mult(sMat, m, m);
+}
+
+void mat4_scalev(mat4 m, float *v)
+{
+    mat4_scale(m, v[0], v[1], v[2]);
 }
 
 /**
@@ -192,7 +197,12 @@ void mat4_translate(mat4 m, float dx, float dy, float dz)
     tMat[MAT_WY] = dy;
     tMat[MAT_WZ] = dz;
 
-    mat4_mult(tMat, m);
+    mat4_mult(tMat, m, m);
+}
+
+void mat4_translatev(mat4 m, float *v)
+{
+    mat4_translate(m, v[0], v[1], v[2]);
 }
 
 /**
@@ -225,7 +235,12 @@ void mat4_rotate(mat4 m, float angle, float rx, float ry, float rz)
     aux [MAT_XW] = aux[MAT_YW] = aux[MAT_ZW] = 0.0f;
     aux[MAT_WW] = 1.0f;
 
-    mat4_mult(aux, m);
+    mat4_mult(aux, m, m);
+}
+
+void mat4_rotatev(mat4 m, float angle, float *v)
+{
+    mat4_rotate(m, angle, v[0], v[1], v[2]);
 }
 
 /**
@@ -267,9 +282,9 @@ void mat4_axisRotate(mat4 m, float rx, float ry, float rz)
     auxz[MAT_XY] = -zs;
     auxz[MAT_YY] = zc;
 
-    mat4_mult(auxy, auxz);
-    mat4_mult(auxx, auxz);
-    mat4_mult(auxz, m);
+    mat4_mult(auxy, auxz, auxz);
+    mat4_mult(auxx, auxz, auxz);
+    mat4_mult(auxz, m, m);
 }
 
 /**
@@ -297,13 +312,13 @@ void mat4_frustum(mat4 m, float l, float r, float b, float t, float n, float f)
     aux[MAT_YW] = 0.0f;
     aux[MAT_ZW] = -1.0f;
     aux[MAT_WW] = 0.0f;
-    mat4_mult(aux, m);
+    mat4_mult(aux, m, m);
 }
 
 /**
  * multiplies the left matrix, and the right matrix, and stores in the right matrix
  */
-void mat4_mult(mat4 l, mat4 r)
+void mat4_mult(mat4 l, mat4 r, mat4 dst)
 {
     mat4 ret;
 
@@ -343,7 +358,7 @@ void mat4_mult(mat4 l, mat4 r)
      ret[MAT_WW] = l[MAT_XW] * r[MAT_WX] + l[MAT_YW] * r[MAT_WY] + 
                 l[MAT_ZW] * r[MAT_WZ] + l[MAT_WW] * r[MAT_WW];
 
-    memcpy(r, ret, sizeof(mat4));
+    memcpy(dst, ret, sizeof(mat4));
 }
 
 /**
@@ -358,7 +373,7 @@ void mat4_pow(mat4 m, int pow)
     mat4_identity(m);
     while(pow--)
     {
-        mat4_mult(m, orig); 
+        mat4_mult(m, orig, m); 
     }
 }
 
@@ -415,7 +430,7 @@ void mat4_orient(mat4 m_in, vec3 up, vec3 fwd)
     m[MAT_WZ] = 0; 
     m[MAT_WW] = 1;
 
-    mat4_mult(m, m_in);
+    mat4_mult(m, m_in, m_in);
     //memcpy(mat, m, sizeof(mat4));
 }
 

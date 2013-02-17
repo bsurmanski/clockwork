@@ -8,8 +8,10 @@
 #ifndef _FRAMEBUFFER_H 
 #define _FRAMEBUFFER_H
 
-#include <GL/glew.h>
+#include <GL/glfw.h>
 #include <GL/gl.h>
+
+#include <stdarg.h>
 
 #define FRAMEBUFFER_DEPTH 1
 #define FRAMEBUFFER_STENCIL 2
@@ -22,18 +24,16 @@ struct Texture;
 typedef struct Framebuffer {
     uint16_t w;
     uint16_t h;
-    GLuint vbo;
     GLuint fbo;
     uint16_t ntextures;
     uint16_t ncolortextures;
-    struct Texture **gltextures;
-    GLuint *textures;
-    GLuint *textureTargets;
+    struct Texture **textures;
 } Framebuffer;
 
 void framebuffer_init(struct Framebuffer *f, int w, int h);
 void framebuffer_resize(struct Framebuffer *f, int w, int h);
-void framebuffer_addTexture(struct Framebuffer *f, int type);
+void framebuffer_addtexture(struct Framebuffer *f, int type, int options);
+void framebuffer_addtextures(struct Framebuffer *f, int n, ...);
 void framebuffer_finalize(struct Framebuffer *f);
 struct Texture **framebuffer_textures(struct Framebuffer *f);
 int framebuffer_ntextures(struct Framebuffer *f);

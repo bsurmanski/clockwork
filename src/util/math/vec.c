@@ -726,6 +726,19 @@ void quaternion_set_rotation(quaternion a, float angle, vec3 axis)
     a[Z] = naxis[Z] * scale;
 }
 
+void quaternion_lerp(quaternion a, quaternion b, float t, quaternion dst)
+{
+    dst[X] = a[X] * t + b[X] * (1.0 - t);
+    dst[Y] = a[Y] * t + b[Y] * (1.0 - t);
+    dst[Z] = a[Z] * t + b[Z] * (1.0 - t);
+    dst[W] = a[W] * t + b[W] * (1.0 - t);
+}
+
+void quaternion_slerp(quaternion a, quaternion b, float t, quaternion dst)
+{
+
+}
+
 /**
  * loads the quaternion identity (1,0,0,0) into a quaternion
  */

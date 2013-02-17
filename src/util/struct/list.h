@@ -41,8 +41,8 @@ void list_addbefore(List *l, Iterator *i, void *element);
 void list_addafter(List *l, Iterator *i, void *element);
 void list_remove(List *l, Iterator *i);
 void *list_get(List *l, Iterator *i);
-void *list_first(List *l, Iterator *ret);
-void *list_last(List *l, Iterator *ret);
+void *list_first(List *l, Iterator *out_it);
+void *list_last(List *l, Iterator *out_it);
 void *list_next(void *l, Iterator *i); //serves as iterator function
 void *list_prev(void *l, Iterator *i); //serves as iterator function
 void list_movebefore(List *l, Iterator *before, Iterator *from);

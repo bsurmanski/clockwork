@@ -23,3 +23,9 @@ float timeval_tick(struct timeval *t)
     t->tv_usec = t2.tv_usec;
     return dt;
 }
+
+float time_fps(struct timeval *t)
+{
+    float dt = timeval_tick(t);
+    return 1.0f / (dt / 1000.0f);
+}

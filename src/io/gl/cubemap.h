@@ -8,7 +8,7 @@
 #ifndef _CUBEMAP_H
 #define _CUBEMAP_H
 
-#include <GL/glew.h>
+#include <GL/glfw.h>
 #include <GL/gl.h>
 
 #include <stdint.h>

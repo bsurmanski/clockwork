@@ -53,7 +53,7 @@ void ball3_move(Ball3 *b, float dv[3])
 bool ball3_collides(Ball3 *a, Ball3 *b)
 {
     float drsq = (a->radius - b->radius) * (a->radius - b->radius);
-    float dv = (a->center[0] - b->center[0]) * (a->center[0] - b->center[0]) +
+    float dv =  (a->center[0] - b->center[0]) * (a->center[0] - b->center[0]) +
                 (a->center[1] - b->center[1]) * (a->center[1] - b->center[1]) +
                 (a->center[2] - b->center[2]) * (a->center[2] - b->center[2]);
     return drsq > dv;
@@ -61,7 +61,7 @@ bool ball3_collides(Ball3 *a, Ball3 *b)
 
 /*
  * 
- * SEBB: Smallest Enclosing Bounding Ball problem bellow
+ * SEBB: Smallest Enclosing Bounding Ball problem below
  *
  */
 
@@ -70,6 +70,29 @@ struct Encball3
     float rsq;
     float center[3];
 };
+
+/**
+ * finds the average of the points in 'points'
+ */
+static void centroid(float *out_point, int ndim, int npoints, float **points)
+{
+    int i,j;
+    for(i = 0; i < ndim; i++)
+    {
+        for(j = 0; j < npoints; j++)
+        {
+            out_point[j] += points[npoints][ndim]; 
+        }
+        out_point[j] /= (float) npoints;
+    }
+} 
+
+static void enclosing_support(Ball3 *out_ball, int nsupport, float **points)
+{
+
+}
+
+/////
 
 static void enclosing_r(Ball3 *ret, List *points, Iterator *support_end, Iterator *it)
 {

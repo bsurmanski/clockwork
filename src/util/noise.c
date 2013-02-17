@@ -19,7 +19,8 @@
 #define DOT2(a,b,x,y) ((a)*(x)+(b)*(y))
 #define DOT3(a,b,c,x,y,z) ((a)*(x)+(b)*(y)+(c)*(z))
 
-float DEFAULT_GRAD[16 * 3] = 
+
+static float DEFAULT_GRAD[16 * 3] = 
 {
     1, 1, 0,
     -1, 1, 0,
@@ -40,8 +41,9 @@ float DEFAULT_GRAD[16 * 3] =
     0, -1, -1
 };
 
-int GRAD_MASK = 0x0F; //MUST be a power of 2 - 1
-float *GRAD = DEFAULT_GRAD;
+static int GRAD_MASK = 0x0F; //MUST be a power of 2 - 1
+static float *GRAD = DEFAULT_GRAD;
+static int initialized = 0;
 
 static int seed = 55;
 
@@ -50,6 +52,11 @@ static int seed = 55;
  */
 void noise_init(int s)
 {
+    if(initialized)
+    {
+        noise_finalize();
+    }
+    initialized = 1;
     seed = s;
     GRAD = malloc(sizeof(float) * 3 *1024);
     GRAD_MASK = 0x03FF;
@@ -66,6 +73,12 @@ void noise_init(int s)
         GRAD[i * 3 + 1] = y;
         GRAD[i * 3 + 2] = z;
     }
+}
+
+void noise_finalize(void)
+{
+    free(GRAD);
+    GRAD = DEFAULT_GRAD;
 }
 
 /**

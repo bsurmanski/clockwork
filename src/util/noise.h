@@ -10,6 +10,7 @@
 #define _NOISE_H
 
 void noise_init(int s);
+void noise_finalize(void);
 float noise1_random(int x);
 float noise1_value(float x);
 float noise1_perlin(float x);

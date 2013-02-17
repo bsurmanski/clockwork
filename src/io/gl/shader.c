@@ -11,7 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <GL/glew.h>
+#include <GL/glfw.h>
 #include <GL/gl.h>
 
 #include "io/file.h"
@@ -25,10 +25,12 @@
 #define SHADER_DIR "glsl/"
 
 static int IGLVERSION = 30; //TODO: decouple this
-
+extern GLuint UNIT_SQUARE;
 
 void shader_add_attrib(shader_t *s, const char *nm, int size, GLenum type, bool normalized, int stride, void *ptr)
 {
+
+
     assert(s->nattribs < 16);
     struct shader_attrib_t *attr = &s->attribs[s->nattribs];
     attr->index = glGetAttribLocation(s->program, nm);
@@ -38,6 +40,7 @@ void shader_add_attrib(shader_t *s, const char *nm, int size, GLenum type, bool 
     attr->stride = stride;
     attr->ptr = ptr;
     s->nattribs++;
+    
 }
 
 void shader_add_texture_target(shader_t *s, const char *nm, short texture_unit)
@@ -69,25 +72,10 @@ void shader_add_fragment_output(shader_t *s, const char *nm)
     s->noutputs++;
 }
 
-/**
- * strnlen not found in gcc C99, and MINGW posix <string.h>.
- * Implimentation to allow strlen without undefined behaviour on 
- * non-nullterminated strings
- */
-/*
-static int strnlen(const char *str, int len)
-{
-    const char *c;
-    for(c = str; *c && len--; ++c);
-    return (c - str);
-}*/
-
 GLuint shader_load(const char *shaderFile)
 {
-    char vname[32]; 
-    char fname[32];
-    //memcpy(vname, shaderFile, strnlen(shaderFile, 32)+1);
-    //memcpy(fname, shaderFile, strnlen(shaderFile, 32)+1);
+    char vname[256]; 
+    char fname[256];
     memcpy(vname, shaderFile, strlen(shaderFile)+1);
     memcpy(fname, shaderFile, strlen(shaderFile)+1);
     strcat(vname, SHADER_VERT_EXT);
@@ -167,6 +155,7 @@ void shader_init(shader_t *s, const char *program)
     s->nattribs = 0; 
     s->noutputs = 0;
     s->ntexture_targets = 0;
+    s->attrib_stride = 0;
     s->attribs = malloc(sizeof(struct shader_attrib_t) * 16);
     s->outputs = malloc(sizeof(struct shader_fragment_output_t) * 16);
     s->texture_targets = malloc(sizeof(struct shader_texture_target_t) * 16);

@@ -8,7 +8,7 @@
 #ifndef _SHADER_H
 #define _SHADER_H
 
-#include <GL/glew.h>
+#include <GL/glfw.h>
 #include <GL/gl.h>
 
 #include "util/math/matrix.h"
@@ -81,6 +81,7 @@ typedef struct Shader {
     short nattribs;
     short noutputs;
     short ntexture_targets;
+    size_t attrib_stride;
     struct shader_attrib_t *attribs;
     struct shader_fragment_output_t *outputs;
     struct shader_texture_target_t *texture_targets;

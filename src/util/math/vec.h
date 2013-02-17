@@ -131,6 +131,8 @@ extern float (*quaternion_lensq)(const quaternion a);
 
 void    quaternion_set(quaternion a, float w, float x, float y, float z);
 void    quaternion_set_rotation(quaternion a, float angle, vec3 axis);
+void    quaternion_lerp(quaternion a, quaternion b, float t, quaternion dst);
+void    quaternion_slerp(quaternion a, quaternion b, float t, quaternion dst);
 void    quaternion_identity(quaternion a);
 void    quaternion_rotate(quaternion a, float angle, vec3 axis);
 float   quaternion_norm(const quaternion a);

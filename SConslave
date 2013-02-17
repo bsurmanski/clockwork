@@ -8,16 +8,16 @@ srcdir="src/"
 libdir="lib/"
 libname="cw"
 
-libs = ["GLEW", "GL", "m", "lua"]
+libs = ["glfw", "GL", "m", "lua"]
 win32_libs = ["mingw32", "glew32", "opengl32", "m", "pthreadGC2", "lua"]
 gcclibdir = []
 
-debugflags = ["-std=c99", "-D DEBUG", "-O0", "-g", "-ftrapv",\
+debugflags = ["-std=c99", "-D DEBUG", "-D GL_GLEXT_PROTOTYPES", "-O0", "-g", "-ftrapv", "-Wall",\
 "-Winit-self", "-Wimplicit", "-Wreturn-type", "-Wuninitialized",\
 "-Wtrampolines", "-Wfloat-equal", "-Waddress", "-Wall", "-Wno-unused", "-pedantic",
 "-Wshadow", "-Wstrict-prototypes", "-Wmissing-prototypes", "-Wno-pointer-to-int-cast", "-Wno-int-to-pointer-cast", "-Wunused-function"]
 
-releaseflags = ["-std=c99", "-O3", "-ftrapv",\
+releaseflags = ["-std=c99", "-D GL_GLEXT_PROTOTYPES" "-O3", "-ftrapv", "-Wall",\
 "-Winit-self", "-Wimplicit", "-Wreturn-type", "-Wuninitialized",\
 "-Wtrampolines", "-Wfloat-equal", "-Waddress", "-Wall", "-Wno-unused", "-pedantic",
 "-Wshadow", "-Wstrict-prototypes", "-Wmissing-prototypes", "-Wno-pointer-to-int-cast", "-Wno-int-to-pointer-cast",\
@@ -42,6 +42,7 @@ sources = \
 "util/math/geom/spline.c", \
 "util/math/geom/tri.c", \
 "util/math/geom/ball.c", \
+"util/math/geom/box.c", \
 "util/script/luaapi.c", \
 "util/struct/kdtree.c", \
 "util/struct/octree.c", \
@@ -52,7 +53,7 @@ sources = \
 "io/tga.c", \
 "io/gl/gl.c", \
 "io/gl/mesh.c", \
-"io/gl/fvmesh.c", \
+"io/gl/armature.c", \
 "io/gl/shader.c", \
 "io/gl/texture.c", \
 "io/gl/cubemap.c", \

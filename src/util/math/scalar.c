@@ -241,3 +241,19 @@ int iwrap(int val, int max)
     }
     return ret;
 }
+
+int iavg(int n, ...)
+{
+    int sum;
+
+    va_list vl;
+    va_start(vl, n);
+
+    int i;
+    for(i = 0; i < n; i++)
+    {
+        sum += va_arg(vl, int);
+    }
+    va_end(vl);
+    return (int) (sum / (int) n);
+}

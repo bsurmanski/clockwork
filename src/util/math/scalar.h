@@ -35,5 +35,6 @@ float       flwavg(int n, float *list, float *weights);
 
 int         iclamp(int val, int a, int b);
 int         iwrap(int val, int max);
+int         iavg(int n, ...);
 
 #endif
