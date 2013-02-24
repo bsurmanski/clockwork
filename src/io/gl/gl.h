@@ -39,11 +39,10 @@ typedef struct gl_vertex
 
 typedef unsigned short gl_index_t[3];
 
-extern int IGLVERSION; //TODO
-
 void gl_init(int win_w, int win_h);
 void gl_finalize(void);
 
+//TODO: remove bind functions. Should not be visible
 void gl_bindshader(struct Shader *shader);
 void gl_bindmesh(struct Mesh *mesh);
 void gl_bindtexture(struct Texture *tex, int texture_unit);
@@ -57,15 +56,16 @@ void gl_unbindtextures(void);
 void gl_unbindframebuffer(enum Framebuffer_IO io);
 
 void gl_swapioframebuffers(void);
-void gl_accumpointlight(float pos[3]); //TODO: color, ambient, difuse, spec, etc
-void gl_accumdirectlight(struct Framebuffer *f, float dir[3]); //TODO: make light accum one method?
-void gl_accumspotlight(float pos[3], float dir[3]);
+void gl_lightpoint(float pos[3]); //TODO: color, ambient, difuse, spec, etc
+void gl_lightdirect(float dir[3]); //TODO: make light accum one method?
+void gl_lightspot(float pos[3], float dir[3]);
 void gl_drawtexture(struct Texture *t, float pos[2], float rotation);
-void gl_drawbones(struct Mesh *m, struct Armature *arm, float *mMat, float *vMat, float *pMat);
+void gl_drawbones(struct Armature *arm, int frame, float *mMat, float *vMat, float *pMat);
 void gl_drawmodel(struct Mesh *mesh, struct Texture *t, float *mMat, float *vMat, float *pMat); 
-void gl_drawmodelskinned(struct Mesh *mesh, struct Armature *arm, struct Texture *t, float *mMat, float *vMat, float *pMat); 
+void gl_drawmodelskinned(struct Mesh *mesh, struct Armature *arm, int frame, struct Texture *t, float *mMat, float *vMat, float *pMat); 
 void gl_drawmodeln(struct Mesh *mesh, struct Texture *t, struct Texture *nmap, float *mMat, float *vMat, float *pMat); 
-void gl_drawframebuffer(struct Framebuffer *f); //TODO: flags for position/lighting on-off/etc
+void gl_drawframebuffer(void); //TODO: flags for position/lighting on-off/etc
 void gl_processtexture(struct Texture *t, struct Shader *s);
+void gl_swapbuffers(void);
 
 #endif

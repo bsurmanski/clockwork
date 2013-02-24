@@ -40,8 +40,7 @@ void main()
     vec4 color = texture(colorTex, f_uv);
     vec4 normal = texture(normalTex, f_uv);
 
-    vec4 tmp = normalize(vec4(1.0f, 1.0f, 1.0f, 1.0f)); //Temporary light
-    vec4 light = tmp;//texture(lightTex, f_uv); 
+    vec4 light = texture(lightTex, f_uv); 
     vec4 difuse = color * clamp(dot(light, normal), 0.0f, 1.0f);
-    outColor = difuse;//vec4(clamp(color * light, 0.0f, 1.0f).rgb, 1.0f);
+    outColor = difuse;//difuse;//vec4(clamp(color * light, 0.0f, 1.0f).rgb, 1.0f);
 }

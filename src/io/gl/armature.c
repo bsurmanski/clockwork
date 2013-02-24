@@ -16,11 +16,7 @@
 #include "util/math/convert.h"
 #include "armature.h"
 
-static Pose *armature_getpose(Armature *a, int frame)
-{
-    return &a->poses[frame * a->nbones];
-}
-
+/*
 static float *armature_poserotation(Armature *a, int frame, int bone)
 {
     return a->poses[frame * a->nbones + bone].rotation;
@@ -34,14 +30,21 @@ static float *armature_poseposition(Armature *a, int frame, int bone)
 static float armature_posescale(Armature *a, int frame, int bone)
 {
     return a->poses[frame * a->nbones + bone].scale;
+}*/
+
+static Pose *armature_getpose(Armature *a, int bone, int frame)
+{
+    return &a->poses[a->nframes * bone + frame];
 }
 
+/*
 static void armature_poselerp(Pose *p_out, Pose *p1, Pose *p2)
 {
     vec4_avg(p_out->rotation, 2, p1->rotation, p2->rotation); 
     vec3_avg(p_out->position, 2, p1->position, p2->position);
     p_out->scale = (p1->scale + p2->scale) / 2.0f;
 }
+*/
 
 static void print_armature(Armature *a)
 {
@@ -49,12 +52,12 @@ static void print_armature(Armature *a)
     for(i = 0; i < a->nframes; i++)
     {
         printf("POSE %d:\n", i);
-        Pose *p = armature_getpose(a, i);
         for(j = 0; j < a->nbones; j++)
         {
+            Pose *p = armature_getpose(a, j, i);
             printf("BONE %d: Q(%f, %f, %f, %f), P(%f,%f,%f), S(%f)\n", j,
-                    p[j].rotation[0], p[j].rotation[1], p[j].rotation[2], p[j].rotation[3],
-                    p[j].position[0], p[j].position[1], p[j].position[2], p[j].scale);
+                    p->rotation[0], p->rotation[1], p->rotation[2], p->rotation[3],
+                    p->position[0], p->position[1], p->position[2], p->scale);
         }
     }
     printf("\n");
@@ -110,8 +113,45 @@ int armature_read(Armature *a, const char *filenm)
 
     armature_unpackbones(a, &h, bone_headers);
 
-    print_armature(a);
+    //print_armature(a);
     return 0;
+}
+
+int armature_addpose(Armature *a)
+{
+    int index = a->nframes;
+    a->nframes++;
+    a->poses = realloc(a->poses, sizeof(Pose) * a->nframes * a->nbones);
+    int i;
+    for(i = a->nbones-1; i >= 0; i--)
+    {
+        memmove(&a->poses[i * a->nframes], &a->poses[i * index], sizeof(Pose) * index);
+
+        //initialize new pose to default (no rotation, translation, scale)
+        vec4_set(a->poses[i * a->nframes + index].rotation, 0, 0, 0, 1);
+        vec3_set(a->poses[i * a->nframes + index].position, 0, 0, 0);
+        a->poses[i * a->nframes + index].scale = 1; 
+    }
+    return index;
+}
+
+void armature_removepose(Armature *a, int pose_i)
+{
+    a->poses = realloc(a->poses, sizeof(Pose) * (a->nframes-1) * a->nbones);
+
+    int i;
+    for(i = 0; i < a->nbones; i++)
+    {
+        if(pose_i > 0)
+        {
+            memmove(&a->poses[i * (a->nframes-1)], &a->poses[i * a->nframes], sizeof(Pose) * pose_i);
+        }
+        if(pose_i < a->nframes-1)
+        {
+            memmove(&a->poses[i * (a->nframes-1) + pose_i+1], 
+                    &a->poses[i * a->nframes + pose_i+1], sizeof(Pose) * ((a->nframes-1) - pose_i));
+        }
+    }
 }
 
 static bool bone_hasparent(Bone *bone)
@@ -128,9 +168,12 @@ void armature_lerp(Armature *a, int frame1, int frame2, float step, mat4 *matric
         vec4 quat;
         vec3 pos;
         int scale;
+        /*
+           TODO
         vec4_avg(quat, 2, armature_poserotation(a, frame1, i), armature_poserotation(a, frame2, i));
         vec3_avg(pos, 2, armature_poseposition(a, frame1, i), armature_poseposition(a, frame2, i));
         scale = (armature_posescale(a, frame1, i) + armature_posescale(a, frame2, i)) / 2.0f;
+        */
     }
 }
 
@@ -144,16 +187,16 @@ void armature_matrices(Armature *a, int frame, mat4 *matrices)
         mat4 tmp;
         mat4_identity(matrices[i]);
 
-        mat4_translate(matrices[i], -bone->head[0], -bone->head[1], -bone->head[2]);
         quaternion_to_mat4(bpose->rotation, tmp);
 
+        mat4_translate(matrices[i], -bone->head[0], -bone->head[1], -bone->head[2]);
         mat4_mult(matrices[i], tmp, matrices[i]);
         mat4_translate(matrices[i], bone->head[0], bone->head[1], bone->head[2]);
         mat4_translate(matrices[i], bpose->position[0], bpose->position[1], bpose->position[2]);
 
         if(bone_hasparent(bone))
         {
-           mat4_mult(matrices[bone->parent->id], matrices[i], matrices[i]);
+            mat4_mult(matrices[bone->parent->id], matrices[i], matrices[i]);
         }
     }
 }

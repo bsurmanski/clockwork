@@ -1,4 +1,7 @@
 #version 130
+
+uniform mat4 tmat;
+
 in vec2 position;
 
 smooth out vec2 f_uv;

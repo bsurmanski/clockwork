@@ -35,8 +35,7 @@ static Framebuffer  *acv_framebuffers[2]    = {NULL};
 
 static GLuint processFBO;
 static Shader *drawmodel        = NULL;
-
-int IGLVERSION = 30; //TODO
+static Framebuffer framebuffers[2];
 
 GLuint UNIT_SQUARE;
 static const gl_vertex_t UNIT_SQUARE_VERTS[] = 
@@ -127,6 +126,15 @@ void gl_init(int win_w, int win_h)
 
     //process framebuffer
     glGenFramebuffers(1, &processFBO);
+
+    framebuffer_init(&framebuffers[0], win_w, win_h);
+    framebuffer_init(&framebuffers[1], win_w, win_h);
+    framebuffer_addtextures(&framebuffers[0], 4, 
+                    TEXTURE_DEPTH, TEXTURE_RGBA, TEXTURE_RGBA, TEXTURE_RGBA);
+    framebuffer_addtextures(&framebuffers[1], 4,
+                    TEXTURE_DEPTH, TEXTURE_RGBA, TEXTURE_RGBA, TEXTURE_RGBA);
+    gl_bindframebuffer(&framebuffers[0], FRAMEBUFFER_OUTPUT);
+    gl_bindframebuffer(&framebuffers[1], FRAMEBUFFER_INPUT);
 }
 
 void gl_finalize(void)
@@ -148,6 +156,7 @@ static void gl_bindshaderattributes(void)
     }
 }
 
+//bind functions
 void gl_bindshader(struct Shader *s)
 {
     acv_shader = s;
@@ -237,17 +246,14 @@ void gl_bindframebuffer(struct Framebuffer *f, enum Framebuffer_IO io)
         acv_framebuffers[io] = f;
         if(f)
         {
-            gl_bindtextures(framebuffer_textures(f), framebuffer_ntextures(f));
+            //gl_bindtextures(framebuffer_textures(f), framebuffer_ntextures(f));
         }
     }
     assert((!acv_framebuffers[io] || acv_framebuffers[0] != acv_framebuffers[1]) 
             && "framebuffer cannot be both input and output");
 }
 
-/*
-* UNBIND
-*/
-
+//unbind functions
 void gl_unbindshader(void)
 {
     acv_shader = NULL;
@@ -294,6 +300,7 @@ void gl_swapioframebuffers(void)
     gl_unbindframebuffer(FRAMEBUFFER_OUTPUT);
     gl_bindframebuffer(out, FRAMEBUFFER_OUTPUT);
     gl_bindframebuffer(in, FRAMEBUFFER_INPUT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 static int acv_framebuffer_w(int fb)
@@ -357,33 +364,45 @@ void gl_drawtexture(Texture *t, float *pos, float rotation)
     glEnable(GL_CULL_FACE);
 }
 
-void gl_accumdirectlight(Framebuffer *f, float dir[3]) //TODO: make light accum one method?
+void gl_lightdirect(float dir[3]) //TODO: make light accum one method?
 {
     static Shader *lightdirect;
+    gl_swapioframebuffers();
 
     static int once = 1;
+    static GLuint light_direction;
     if(once)
     {
         lightdirect = malloc(sizeof(Shader));
         shader_init(lightdirect, "clockwork/glsl/lighting/direct");
         shader_add_attrib(lightdirect, "position", 2, GL_FLOAT, false, 32, (void*) 0);
+        shader_add_texture_target(lightdirect, "inDepth", 0);
+        shader_add_texture_target(lightdirect, "inColor", 1);
+        shader_add_texture_target(lightdirect, "inNormal", 2);
+        shader_add_texture_target(lightdirect, "inLight", 3);
+        shader_add_fragment_output(lightdirect, "outColor");
+        shader_add_fragment_output(lightdirect, "outNormal");
         shader_add_fragment_output(lightdirect, "outLight");
+        light_direction = glGetUniformLocation(lightdirect->program, "light_direction");
         once = 0;
     }
     //gl_bindframebuffer(f, FRAMEBUFFER_INPUT);
     gl_bindshader(lightdirect);
     glBindBuffer(GL_ARRAY_BUFFER, UNIT_SQUARE);
     gl_bindshaderattributes();
+    gl_bindtextures(framebuffer_textures(acv_framebuffers[FRAMEBUFFER_INPUT]), 
+            framebuffer_ntextures(acv_framebuffers[FRAMEBUFFER_INPUT]));
+    glUniform3fv(light_direction, 1, dir);
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    gl_unbindframebuffer(FRAMEBUFFER_INPUT);
+    //gl_unbindframebuffer(FRAMEBUFFER_INPUT);
     gl_unbindshader();
 }
 
 #include "util/math/matrix.h"
 #include "util/math/convert.h"
-void gl_drawbones(Mesh *mesh, Armature *arm, float *mMat, float *vMat, float *pMat)
+void gl_drawbones(Armature *arm, int frame, float *mMat, float *vMat, float *pMat)
 {
     static Shader *drawbones;
     static GLuint tmatloc;
@@ -411,7 +430,7 @@ void gl_drawbones(Mesh *mesh, Armature *arm, float *mMat, float *vMat, float *pM
         glGenBuffers(1, &bonetmp);
     }
     glBindBuffer(GL_ARRAY_BUFFER, bonetmp);
-    glBufferData(GL_ARRAY_BUFFER, mesh->nbones * 64, NULL, GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, arm->nbones * 64, NULL, GL_STREAM_DRAW);
     struct Mesh_vert *bones = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
     int i;
     for(i = 0; i < arm->nbones; i++)
@@ -434,7 +453,7 @@ void gl_drawbones(Mesh *mesh, Armature *arm, float *mMat, float *vMat, float *pM
     glUniform1i(bone_enloc, true);
 
     mat4 *m = alloca(arm->nbones * sizeof(mat4));
-    armature_matrices(arm, 2, m);
+    armature_matrices(arm, frame, m);
 
     glUniformMatrix4fv(boneloc, arm->nbones, true, (float*)m);
     glDrawArrays(GL_LINES, 0, arm->nbones * 2);
@@ -458,12 +477,12 @@ void gl_drawmodel(Mesh *mesh, Texture *t, float *mMat, float *vMat, float *pMat)
     static GLuint tmatloc;
     static GLuint nmatloc;
     static GLuint bone_enloc;
-    static int initd = 0;
-    if(!initd)
+    static int once = 1;
+    if(once)
     {
         tmatloc = glGetUniformLocation(drawmodel->program, "t_matrix");
         bone_enloc = glGetUniformLocation(drawmodel->program, "bones_enable");
-        initd=1;
+        once=0;
     }
 
     gl_bindtexture(t, 0);
@@ -480,8 +499,10 @@ void gl_drawmodel(Mesh *mesh, Texture *t, float *mMat, float *vMat, float *pMat)
     gl_unbindshader();
 }
 
+//TODO: variable armature frame, pass in pose instead or something
 void gl_drawmodelskinned(struct Mesh *mesh, 
                          struct Armature *arm,
+                         int frame,
                          struct Texture *tex, 
                          float *mMat, 
                          float *vMat, 
@@ -516,7 +537,7 @@ void gl_drawmodelskinned(struct Mesh *mesh,
 
     glUniformMatrix4fv(tmatloc, 1, true, t_matrix);
     mat4 *bmat = alloca(sizeof(mat4) * arm->nbones);
-    armature_matrices(arm, 2, bmat);
+    armature_matrices(arm, frame, bmat);
     glUniformMatrix4fv(boneloc, arm->nbones, true, (float*) bmat);
     glUniform1i(bone_enloc, true);
     glDrawElements(GL_TRIANGLES, mesh->nfaces * 3, GL_UNSIGNED_SHORT, (void*) 0);
@@ -526,8 +547,14 @@ void gl_drawmodelskinned(struct Mesh *mesh,
     gl_unbindshader();
 }
 
-void gl_drawframebuffer(struct Framebuffer *f)
+void gl_drawframebuffer(void)
 {
+    //TODO: clean up this silly conditional
+    Framebuffer *f = acv_framebuffers[FRAMEBUFFER_INPUT];
+    gl_swapioframebuffers();
+    gl_unbindframebuffer(FRAMEBUFFER_OUTPUT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     static Shader *drawframebuffer;
     static int once = 1;
     if(once)
@@ -544,15 +571,23 @@ void gl_drawframebuffer(struct Framebuffer *f)
     }
 
     glViewport(0, 0, acv_framebuffer_w(FRAMEBUFFER_OUTPUT), acv_framebuffer_h(FRAMEBUFFER_OUTPUT));
-    gl_bindframebuffer(f, FRAMEBUFFER_INPUT);
+    //gl_bindframebuffer(f, FRAMEBUFFER_INPUT);
+    gl_bindtextures(framebuffer_textures(acv_framebuffers[FRAMEBUFFER_INPUT]), 
+            framebuffer_ntextures(acv_framebuffers[FRAMEBUFFER_INPUT]));
     gl_bindshader(drawframebuffer);
     glBindBuffer(GL_ARRAY_BUFFER, UNIT_SQUARE);
     gl_bindshaderattributes();
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    gl_unbindframebuffer(FRAMEBUFFER_INPUT);
+    //gl_unbindframebuffer(FRAMEBUFFER_INPUT);
     gl_unbindshader();
+
+    //if(output) //TODO: clean up this too
+    {
+        gl_bindframebuffer(f, FRAMEBUFFER_OUTPUT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
 }
 
 void gl_processtexture(struct Texture *t, struct Shader *s)
@@ -582,4 +617,10 @@ void gl_processtexture(struct Texture *t, struct Shader *s)
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+}
+
+void gl_swapbuffers(void)
+{
+    gl_drawframebuffer();
+    glfwSwapBuffers();
 }

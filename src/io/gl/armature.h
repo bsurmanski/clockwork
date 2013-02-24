@@ -65,6 +65,8 @@ typedef struct Armature
 
 int armature_read(Armature *a, const char *filenm);
 void armature_lerp(Armature *a, int frame1, int frame2, float step, mat4 *matrices);
+int armature_addpose(Armature *a);
+void armature_removepose(Armature *a, int pose_i);
 void armature_posecopy(Armature *a, int frame_to, int frame_from);
 void armature_matrices(Armature *a, int frame, mat4 *matrices);
 void armature_finalize(Armature *a);
