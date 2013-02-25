@@ -56,9 +56,10 @@ void gl_unbindtextures(void);
 void gl_unbindframebuffer(enum Framebuffer_IO io);
 
 void gl_swapioframebuffers(void);
-void gl_lightpoint(float pos[3]); //TODO: color, ambient, difuse, spec, etc
-void gl_lightdirect(float dir[3]); //TODO: make light accum one method?
-void gl_lightspot(float pos[3], float dir[3]);
+void gl_lightambient(float color[3]);
+void gl_lightpoint(float color[3], float pos[3]); //TODO: color, ambient, difuse, spec, etc
+void gl_lightdirect(float color[3], float dir[3]); //TODO: make light accum one method?
+void gl_lightspot(float color[3], float pos[3], float dir[3]);
 void gl_drawtexture(struct Texture *t, float pos[2], float rotation);
 void gl_drawbones(struct Armature *arm, int frame, float *mMat, float *vMat, float *pMat);
 void gl_drawmodel(struct Mesh *mesh, struct Texture *t, float *mMat, float *vMat, float *pMat); 

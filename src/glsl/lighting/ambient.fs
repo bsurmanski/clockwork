@@ -5,8 +5,7 @@ uniform sampler2D inColor;
 uniform sampler2D inNormal;
 uniform sampler2D inLight;
 
-uniform vec3 light_color;
-uniform vec3 light_direction;
+uniform vec3 ambient_color; 
 
 smooth in vec2 f_uv; 
 
@@ -20,9 +19,8 @@ void main()
     vec4 normal = texture(inNormal, f_uv);
     vec4 light = texture(inLight, f_uv);
 
-    vec4 new_light = vec4(light_color, 1.0f) * 
-                    clamp(dot(normalize(light_direction), normal.xyz), 0.0f, 1.0f);
-
+    vec4 new_light = vec4(ambient_color, 1.0f);
+                    
     outColor = color;
     outNormal = normal;
     outLight = clamp(light + new_light, vec4(0), vec4(1));

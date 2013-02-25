@@ -14,6 +14,7 @@
 #include <GL/glfw.h>
 #include <GL/gl.h>
 
+#include "util/math/convert.h"
 #include "util/math/matrix.h"
 #include "io/gl/framebuffer.h"
 #include "io/gl/mesh.h"
@@ -40,38 +41,38 @@ static Framebuffer framebuffers[2];
 GLuint UNIT_SQUARE;
 static const gl_vertex_t UNIT_SQUARE_VERTS[] = 
 {
-// Triangle 1
-{
-    {-1,-1,0},
-    {0,0,1},
-    {0x0000,0x0000}
-},
-{
-    {1,-1,0},
-    {0,0,1},
-    {0xffff,0x0000}
-},
-{
-    {1,1,0},
-    {0,0,1},
-    {0xffff,0xffff}
-},
-// Triangle 2
-{
-    {-1,-1,0},
-    {0,0,1},
-    {0x0000,0x0000}
-},
-{
-    {1,1,0},
-    {0,0,1},
-    {0xffff,0xffff}
-},
-{
-    {-1,1,0},
-    {0,0,1},
-    {0x0000,0xffff}
-}
+    // Triangle 1
+    {
+        {-1,-1,0},
+        {0,0,1},
+        {0x0000,0x0000}
+    },
+    {
+        {1,-1,0},
+        {0,0,1},
+        {0xffff,0x0000}
+    },
+    {
+        {1,1,0},
+        {0,0,1},
+        {0xffff,0xffff}
+    },
+    // Triangle 2
+    {
+        {-1,-1,0},
+        {0,0,1},
+        {0x0000,0x0000}
+    },
+    {
+        {1,1,0},
+        {0,0,1},
+        {0xffff,0xffff}
+    },
+    {
+        {-1,1,0},
+        {0,0,1},
+        {0x0000,0xffff}
+    }
 };
 
 void gl_init(int win_w, int win_h)
@@ -313,6 +314,79 @@ static int acv_framebuffer_h(int fb)
     return (acv_framebuffers[fb] ? acv_framebuffers[fb]->h : WINDOW_HEIGHT);
 }
 
+//lighting
+void gl_lightambient(float color[3])
+{
+    static Shader *lightambient;
+    static GLuint ambient_color;
+    gl_swapioframebuffers();
+
+    static int once = 1;
+    if(once)
+    {
+        lightambient = malloc(sizeof(Shader));
+        shader_init(lightambient, "clockwork/glsl/lighting/ambient");
+        shader_add_attrib(lightambient, "position", 2, GL_FLOAT, false, 32, (void*) 0);
+        shader_add_texture_target(lightambient, "inDepth", 0);
+        shader_add_texture_target(lightambient, "inColor", 1);
+        shader_add_texture_target(lightambient, "inNormal", 2);
+        shader_add_texture_target(lightambient, "inLight", 3);
+        shader_add_fragment_output(lightambient, "outColor");
+        shader_add_fragment_output(lightambient, "outNormal");
+        shader_add_fragment_output(lightambient, "outLight");
+        ambient_color = glGetUniformLocation(lightambient->program, "ambient_color");
+        once = 0;
+    }
+
+    gl_bindshader(lightambient);
+    glBindBuffer(GL_ARRAY_BUFFER, UNIT_SQUARE);
+    gl_bindshaderattributes();
+    gl_bindtextures(framebuffer_textures(acv_framebuffers[FRAMEBUFFER_INPUT]), 
+            framebuffer_ntextures(acv_framebuffers[FRAMEBUFFER_INPUT]));
+    glUniform3fv(ambient_color, 1, color);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    gl_unbindshader();
+}
+
+void gl_lightdirect(float color[3], float dir[3]) //TODO: make light accum one method?
+{
+    static Shader *lightdirect;
+    static GLuint light_direction;
+    static GLuint light_color;
+    gl_swapioframebuffers();
+
+    static int once = 1;
+    if(once)
+    {
+        lightdirect = malloc(sizeof(Shader));
+        shader_init(lightdirect, "clockwork/glsl/lighting/direct");
+        shader_add_attrib(lightdirect, "position", 2, GL_FLOAT, false, 32, (void*) 0);
+        shader_add_texture_target(lightdirect, "inDepth", 0);
+        shader_add_texture_target(lightdirect, "inColor", 1);
+        shader_add_texture_target(lightdirect, "inNormal", 2);
+        shader_add_texture_target(lightdirect, "inLight", 3);
+        shader_add_fragment_output(lightdirect, "outColor");
+        shader_add_fragment_output(lightdirect, "outNormal");
+        shader_add_fragment_output(lightdirect, "outLight");
+        light_direction = glGetUniformLocation(lightdirect->program, "light_direction");
+        light_color = glGetUniformLocation(lightdirect->program, "light_color");
+        once = 0;
+    }
+
+    gl_bindshader(lightdirect);
+    glBindBuffer(GL_ARRAY_BUFFER, UNIT_SQUARE);
+    gl_bindshaderattributes();
+    gl_bindtextures(framebuffer_textures(acv_framebuffers[FRAMEBUFFER_INPUT]), 
+            framebuffer_ntextures(acv_framebuffers[FRAMEBUFFER_INPUT]));
+    glUniform3fv(light_color, 1, color);
+    glUniform3fv(light_direction, 1, dir);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    gl_unbindshader();
+}
+
+// draw2D
 void gl_drawtexture(Texture *t, float *pos, float rotation)
 {
     static float default_pos[2] = {0.0f, 0.0f};
@@ -364,44 +438,7 @@ void gl_drawtexture(Texture *t, float *pos, float rotation)
     glEnable(GL_CULL_FACE);
 }
 
-void gl_lightdirect(float dir[3]) //TODO: make light accum one method?
-{
-    static Shader *lightdirect;
-    gl_swapioframebuffers();
-
-    static int once = 1;
-    static GLuint light_direction;
-    if(once)
-    {
-        lightdirect = malloc(sizeof(Shader));
-        shader_init(lightdirect, "clockwork/glsl/lighting/direct");
-        shader_add_attrib(lightdirect, "position", 2, GL_FLOAT, false, 32, (void*) 0);
-        shader_add_texture_target(lightdirect, "inDepth", 0);
-        shader_add_texture_target(lightdirect, "inColor", 1);
-        shader_add_texture_target(lightdirect, "inNormal", 2);
-        shader_add_texture_target(lightdirect, "inLight", 3);
-        shader_add_fragment_output(lightdirect, "outColor");
-        shader_add_fragment_output(lightdirect, "outNormal");
-        shader_add_fragment_output(lightdirect, "outLight");
-        light_direction = glGetUniformLocation(lightdirect->program, "light_direction");
-        once = 0;
-    }
-    //gl_bindframebuffer(f, FRAMEBUFFER_INPUT);
-    gl_bindshader(lightdirect);
-    glBindBuffer(GL_ARRAY_BUFFER, UNIT_SQUARE);
-    gl_bindshaderattributes();
-    gl_bindtextures(framebuffer_textures(acv_framebuffers[FRAMEBUFFER_INPUT]), 
-            framebuffer_ntextures(acv_framebuffers[FRAMEBUFFER_INPUT]));
-    glUniform3fv(light_direction, 1, dir);
-
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    //gl_unbindframebuffer(FRAMEBUFFER_INPUT);
-    gl_unbindshader();
-}
-
-#include "util/math/matrix.h"
-#include "util/math/convert.h"
+// draw3D
 void gl_drawbones(Armature *arm, int frame, float *mMat, float *vMat, float *pMat)
 {
     static Shader *drawbones;
