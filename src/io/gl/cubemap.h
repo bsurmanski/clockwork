@@ -33,8 +33,10 @@ enum Cubemap_image
     CUBEMAP_NEGATIVE_Z
 };
 
-void cubemap_init(Cubemap *c, int options);
-void cubemap_load(Cubemap *c, enum Cubemap_image i, const char *filenm);
-void cubemap_finalize(Cubemap *c);
+void cubemap_init(struct Cubemap *c, int options);
+void cubemap_finalize(struct Cubemap *c);
+void cubemap_load(struct Cubemap *c, enum Cubemap_image i, const char *filenm);
+void cubemap_commit(struct Cubemap *c);
+void cubemap_fill(struct Cubemap *cubemap, uint32_t color);
 
 #endif

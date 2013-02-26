@@ -94,7 +94,7 @@ static int texture_depth(struct Texture *texture)
     return texture->fmt->depth;
 }
 
-void texture_read(struct Texture *texture, const char *filenm, int options)
+void texture_initff(struct Texture *texture, const char *filenm, int options)
 {
     texture->w = 0;
     texture->h = 0;

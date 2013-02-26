@@ -57,13 +57,14 @@ typedef struct Texture {
 typedef Texture texture_t;
 
 //TODO: better name for load file?
+//void texture_init(struct Texture *texture, int w, int h, int options);
 void texture_loadfile(struct Texture *texture, const char *filenm);
-void texture_read(struct Texture *texture, const char *filenm, int options);
+void texture_initff(struct Texture *texture, const char *filenm, int options);
 void texture_init(struct Texture *tex, int w, int h, enum Texture_Format format, int options);
 void texture_finalize(struct Texture *texture);
 void texture_commit(struct Texture *texture);
 void texture_flip(struct Texture *texture);
-void texture_fill(struct Texture *texture, uint32_t color);
+void texture_fill(struct Texture *texture, uint32_t color); //TODO: inconsistant with lighting float color
 uint32_t texture_getpixel(struct Texture *texture, int x, int y);
 void texture_setpixel(struct Texture *texture, int x, int y, uint32_t val);
 

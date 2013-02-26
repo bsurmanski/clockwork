@@ -64,7 +64,7 @@ static int mesh_filetype(const char *filenm)
 /**
  * load a mesh from a file
  */
-int mesh_read(Mesh *m, const char *filenm)
+int mesh_initff(Mesh *m, const char *filenm)
 {
     int fd = open(filenm, O_RDONLY | O_BINARY); 
 

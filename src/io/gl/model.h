@@ -15,12 +15,14 @@ struct Pose;
 typedef struct Model
 {
     uint16_t nmeshes;
-    uint16_t nbones;
-    uint16_t nposes;
+    uint16_t narmatures;
     struct Mesh     *meshes;
     struct Texture  *color;
     struct Texture  *normal;
-    struct Pose     *poses;
+    struct Armature *armatures;
 } Model;
+
+void model_init(Model *model);
+void model_addmesh(Model *model, Mesh *mesh, Texture *color, Texture *normal);
 
 #endif

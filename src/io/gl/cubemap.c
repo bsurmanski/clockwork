@@ -8,6 +8,7 @@
 #include <GL/glfw.h>
 #include <GL/gl.h>
 
+#include "io/gl/texture.h"
 #include "gl.h"
 #include "cubemap.h"
 
@@ -26,12 +27,12 @@ void cubemap_init(Cubemap *c, int options)
     }
 }
 
-void cubemap_load(Cubemap *c, enum Cubemap_image i, const char *filenm)
+void cubemap_finalize(Cubemap *c)
 {
 
 }
 
-void cubemap_finalize(Cubemap *c)
+void cubemap_load(Cubemap *c, enum Cubemap_image i, const char *filenm)
 {
 
 }

@@ -1,3 +1,3 @@
 all:
 	rsync libcw/lib/libcw.so libcw.so
-	gcc *.c -lm -lcw -I. -Iclockwork -L.
+	gcc *.c -lm -lcw -I. -I../src -Iclockwork -L.

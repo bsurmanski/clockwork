@@ -74,7 +74,7 @@ typedef struct Mesh {
     GLuint      ibo;             ///< OpenGL index buffer object handle (GL_ELEMENT_ARRAY_BUFFER)
 } Mesh;
 
-int mesh_read(Mesh *m, const char *filenm);   //
+int mesh_initff(Mesh *m, const char *filenm);   //
 void mesh_finalize(Mesh *m);                  //
 
 void mesh_commit(Mesh *m);

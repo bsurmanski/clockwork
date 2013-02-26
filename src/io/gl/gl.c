@@ -349,7 +349,9 @@ void gl_lightambient(float color[3])
     gl_unbindshader();
 }
 
-void gl_lightdirect(float color[3], float dir[3]) //TODO: make light accum one method?
+//TODO: buffer directional light, drawing 8/16 lights at a time
+//TODO: convert lighting direction to eye space, pass in MVP?
+void gl_lightdirect(float color[3], float dir[3])
 {
     static Shader *lightdirect;
     static GLuint light_direction;
@@ -536,7 +538,6 @@ void gl_drawmodel(Mesh *mesh, Texture *t, float *mMat, float *vMat, float *pMat)
     gl_unbindshader();
 }
 
-//TODO: variable armature frame, pass in pose instead or something
 void gl_drawmodelskinned(struct Mesh *mesh, 
                          struct Armature *arm,
                          int frame,
