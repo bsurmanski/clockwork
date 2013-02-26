@@ -67,15 +67,6 @@ struct shader_attrib_t {
     const GLvoid *ptr;
 };
 
-typedef struct shader_attachment_t 
-{
-    short nbuffers;
-    short ntextures;
-    struct shader_buffer_object_t *buffers;
-    struct shader_texture_target_t *textures;
-} shader_attachment_t;
-
-
 typedef struct Shader {
     GLuint program;
     short nattribs;
@@ -85,7 +76,6 @@ typedef struct Shader {
     struct shader_attrib_t *attribs;
     struct shader_fragment_output_t *outputs;
     struct shader_texture_target_t *texture_targets;
-    struct shader_attachment_t *bound;
 } Shader;
 
 typedef struct Shader shader_t;
@@ -102,5 +92,8 @@ void shader_add_attrib(shader_t *s, const char *nm, int sz, GLenum type, //TODO:
 void shader_add_fragment_output(shader_t *s, const char *nm);
 void shader_add_texture_target(shader_t *s, const char *nm, short texture_unit);
 void shader_add_uniform(shader_t *s, enum shader_variable_type t, char *nm);
+
+//set uniform
+void shader_set_parameter(shader_t *s, char *nm, void *value, size_t sz);
 
 #endif

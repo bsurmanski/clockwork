@@ -14,6 +14,7 @@
 #include <GL/glfw.h>
 #include <GL/gl.h>
 
+#include "io/gl/gl.h"
 #include "io/file.h"
 #include "io/gl/texture.h"
 
@@ -117,6 +118,18 @@ GLuint shader_load(const char *shaderFile)
     GLuint program = glCreateProgram();
     glAttachShader(program, vshader);
     glAttachShader(program, fshader);
+    glEnableVertexAttribArray(CW_POSITION);
+    glBindAttribLocation(program, CW_POSITION,      "position");
+    glBindAttribLocation(program, CW_NORMAL,        "normal");
+    glBindAttribLocation(program, CW_UV,            "uv");
+    glBindAttribLocation(program, CW_MATERIAL,      "material");
+    glBindAttribLocation(program, CW_BONEIDS,       "boneids");
+    glBindAttribLocation(program, CW_BONEWEIGHTS,   "boneweights");
+    //glEnableVertexAttribArray(CW_NORMAL);
+    //glEnableVertexAttribArray(CW_POSITION);
+    //glEnableVertexAttribArray(CW_POSITION);
+    //glEnableVertexAttribArray(CW_POSITION);
+    //glEnableVertexAttribArray(CW_POSITION);
     glLinkProgram(program);
 
     glGetProgramiv(program, GL_LINK_STATUS, &status);
@@ -166,4 +179,89 @@ void shader_finalize(shader_t *s)
     free(s->attribs);
     free(s->outputs);
     free(s->texture_targets);
+}
+
+static void shader_set_block(shader_t *s, char *nm, void *value, size_t sz)
+{
+    unsigned int location = glGetUniformBlockIndex(s->program, nm);
+    if(location == GL_INVALID_INDEX) //ERROR block does not exist
+    {
+        return;
+    }
+}
+
+void shader_set_parameter(shader_t *s, char *nm, void *value, size_t sz)
+{
+    char buf[64];
+    GLint current_program;
+    glGetIntegerv(GL_CURRENT_PROGRAM, &current_program);
+    glUseProgram(s->program);
+    
+    int location = glGetUniformLocation(s->program, nm); 
+    GLuint index; //Why is there a distinction between location/index?
+    glGetUniformIndices(s->program, 1, (const GLchar * const*)&nm, &index);
+    if(location < 0 || location == GL_INVALID_INDEX) // ERROR uniform does not exist
+    {
+        shader_set_block(s, nm, value, sz); // try with uniform block
+        goto CLEANUP;
+    }
+
+    GLenum type;
+    glGetActiveUniform(s->program, index, 0, NULL, NULL, &type, NULL);
+
+    //void (*uniform_func)(GLint loc, GLsizei count, const GLuint *val) = 0;
+    switch(type)
+    {
+        case GL_FLOAT_VEC4:
+            glUniform4fv(location, sz/(sizeof(float) * 4), value);
+            break;
+        case GL_FLOAT_VEC3:
+            glUniform3fv(location, sz/(sizeof(float) * 3), value);
+            break;
+        case GL_FLOAT_VEC2:
+            glUniform2fv(location, sz/(sizeof(float) * 2), value);
+            break;
+        case GL_FLOAT:
+            glUniform1fv(location, sz/sizeof(float), value);
+            break;
+        case GL_INT_VEC4:
+            glUniform4iv(location, (sz/sizeof(int) * 4), value);
+            break;
+        case GL_INT_VEC3:
+            glUniform3iv(location, (sz/sizeof(int) * 3), value);
+            break;
+        case GL_INT_VEC2:
+            glUniform2iv(location, (sz/sizeof(int) * 2), value);
+            break;
+        case GL_INT:
+        case GL_BOOL:
+        case GL_SAMPLER_2D:
+        case GL_SAMPLER_3D:
+        case GL_SAMPLER_CUBE:
+            glUniform1iv(location, sz/sizeof(int), value);
+            break;
+        case GL_UNSIGNED_INT_VEC4:
+            glUniform4uiv(location, (sz/sizeof(unsigned int) * 4), value);
+            break;
+        case GL_UNSIGNED_INT_VEC3:
+            glUniform3uiv(location, (sz/sizeof(unsigned int) * 3), value);
+            break;
+        case GL_UNSIGNED_INT_VEC2:
+            glUniform2uiv(location, (sz/sizeof(unsigned int) * 2), value);
+            break;
+        case GL_UNSIGNED_INT:
+            glUniform1uiv(location, sz/sizeof(unsigned int), value);
+            break;
+        case GL_FLOAT_MAT4:
+            glUniformMatrix4fv(location, sz/(sizeof(float) * 16), true, value);
+            break;
+        case GL_FLOAT_MAT3:
+            glUniformMatrix3fv(location, sz/(sizeof(float) * 9), true, value);
+            break;
+        default:
+            assert(0 && "invalid parameter type");
+    }
+
+CLEANUP:
+    glUseProgram(current_program);
 }

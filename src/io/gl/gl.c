@@ -38,6 +38,7 @@ static GLuint processFBO;
 static Shader *drawmodel        = NULL;
 static Framebuffer framebuffers[2];
 
+GLuint UNIT_SQUARE_VAO;
 GLuint UNIT_SQUARE;
 static const gl_vertex_t UNIT_SQUARE_VERTS[] = 
 {
@@ -75,6 +76,18 @@ static const gl_vertex_t UNIT_SQUARE_VERTS[] =
     }
 };
 
+//TODO: remove bind functions.
+static void gl_bindshader(struct Shader *shader);
+static void gl_bindmesh(struct Mesh *mesh);
+static void gl_bindtexture(struct Texture *tex, int texture_unit);
+static void gl_bindtextures(struct Texture **tex, int n);
+static void gl_bindframebuffer(struct Framebuffer *f, enum Framebuffer_IO io);
+static void gl_unbindshader(void);
+static void gl_unbindmesh(void);
+static void gl_unbindtexture(int texture_unit);
+static void gl_unbindtextures(void);
+static void gl_unbindframebuffer(enum Framebuffer_IO io);
+
 void gl_init(int win_w, int win_h)
 {
     WINDOW_WIDTH = win_w;
@@ -108,9 +121,22 @@ void gl_init(int win_w, int win_h)
 
     // create unit square buffer
     glGenBuffers(1, &UNIT_SQUARE);
+    glGenVertexArrays(1, &UNIT_SQUARE_VAO);
+
+    glBindVertexArray(UNIT_SQUARE_VAO);
     glBindBuffer(GL_ARRAY_BUFFER, UNIT_SQUARE);
     glBufferData(GL_ARRAY_BUFFER, sizeof(UNIT_SQUARE_VERTS), UNIT_SQUARE_VERTS, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glEnableVertexAttribArray(CW_POSITION);
+    glEnableVertexAttribArray(CW_NORMAL);
+    glEnableVertexAttribArray(CW_UV);
+    glVertexAttribPointer(CW_POSITION,      3, GL_FLOAT,           false, 32, (void *) 0);
+    glVertexAttribPointer(CW_NORMAL,        3, GL_SHORT,           true,  32, (void *) 12);
+    glVertexAttribPointer(CW_UV,            2, GL_UNSIGNED_SHORT,  true,  32, (void *) 18);
+    glVertexAttribPointer(CW_BONEIDS,       2, GL_UNSIGNED_BYTE,   false, 32, (void *) 24);
+    glVertexAttribPointer(CW_BONEWEIGHTS,   2, GL_UNSIGNED_BYTE,   true,  32, (void *) 26);
+    glBindVertexArray(0);
+
+    //glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
     drawmodel = malloc(sizeof(Shader));
@@ -158,7 +184,7 @@ static void gl_bindshaderattributes(void)
 }
 
 //bind functions
-void gl_bindshader(struct Shader *s)
+static void gl_bindshader(struct Shader *s)
 {
     acv_shader = s;
 
@@ -187,7 +213,7 @@ void gl_bindshader(struct Shader *s)
     }
 }
 
-void gl_bindmesh(struct Mesh *mesh)
+static void gl_bindmesh(struct Mesh *mesh)
 {
     if(!mesh)
     {
@@ -206,7 +232,7 @@ void gl_bindmesh(struct Mesh *mesh)
     }
 }
 
-void gl_bindtexture(Texture *tex, int tunit)
+static void gl_bindtexture(Texture *tex, int tunit)
 {
     assert(tunit < MAX_TEX);
 
@@ -221,7 +247,7 @@ void gl_bindtexture(Texture *tex, int tunit)
     }
 }
 
-void gl_bindtextures(Texture **tex, int n)
+static void gl_bindtextures(Texture **tex, int n)
 {
     int i;
     for(i = 0; i < n; i++)
@@ -230,7 +256,7 @@ void gl_bindtextures(Texture **tex, int n)
     }
 }
 
-void gl_bindframebuffer(struct Framebuffer *f, enum Framebuffer_IO io)
+static void gl_bindframebuffer(struct Framebuffer *f, enum Framebuffer_IO io)
 {
 
     if(io == FRAMEBUFFER_OUTPUT)
@@ -255,24 +281,24 @@ void gl_bindframebuffer(struct Framebuffer *f, enum Framebuffer_IO io)
 }
 
 //unbind functions
-void gl_unbindshader(void)
+static void gl_unbindshader(void)
 {
     acv_shader = NULL;
     glUseProgram(0);
 }
 
-void gl_unbindmesh(void)
+static void gl_unbindmesh(void)
 {
     acv_mesh = NULL;
 }
 
-void gl_unbindtexture(int tunit)
+static void gl_unbindtexture(int tunit)
 {
     assert(tunit < MAX_TEX);
     acv_texture[tunit] = NULL;
 }
 
-void gl_unbindtextures(void)
+static void gl_unbindtextures(void)
 {
     int i;
     for(i = 0; i < MAX_TEX; i++)
@@ -281,7 +307,7 @@ void gl_unbindtextures(void)
     }
 }
 
-void gl_unbindframebuffer(enum Framebuffer_IO io)
+static void gl_unbindframebuffer(enum Framebuffer_IO io)
 {
     acv_framebuffers[io] = NULL;
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -327,6 +353,7 @@ void gl_lightambient(float color[3])
         lightambient = malloc(sizeof(Shader));
         shader_init(lightambient, "clockwork/glsl/lighting/ambient");
         shader_add_attrib(lightambient, "position", 2, GL_FLOAT, false, 32, (void*) 0);
+
         shader_add_texture_target(lightambient, "inDepth", 0);
         shader_add_texture_target(lightambient, "inColor", 1);
         shader_add_texture_target(lightambient, "inNormal", 2);
@@ -339,13 +366,13 @@ void gl_lightambient(float color[3])
     }
 
     gl_bindshader(lightambient);
-    glBindBuffer(GL_ARRAY_BUFFER, UNIT_SQUARE);
-    gl_bindshaderattributes();
+    glBindVertexArray(UNIT_SQUARE_VAO);
     gl_bindtextures(framebuffer_textures(acv_framebuffers[FRAMEBUFFER_INPUT]), 
             framebuffer_ntextures(acv_framebuffers[FRAMEBUFFER_INPUT]));
-    glUniform3fv(ambient_color, 1, color);
+    shader_set_parameter(lightambient, "ambient_color", color, sizeof(float[3]));
+    //glUniform3fv(ambient_color, 1, color);
     glDrawArrays(GL_TRIANGLES, 0, 6);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
     gl_unbindshader();
 }
 
@@ -377,14 +404,15 @@ void gl_lightdirect(float color[3], float dir[3])
     }
 
     gl_bindshader(lightdirect);
-    glBindBuffer(GL_ARRAY_BUFFER, UNIT_SQUARE);
-    gl_bindshaderattributes();
+    glBindVertexArray(UNIT_SQUARE_VAO);
     gl_bindtextures(framebuffer_textures(acv_framebuffers[FRAMEBUFFER_INPUT]), 
             framebuffer_ntextures(acv_framebuffers[FRAMEBUFFER_INPUT]));
-    glUniform3fv(light_color, 1, color);
-    glUniform3fv(light_direction, 1, dir);
+    shader_set_parameter(lightdirect, "light_color", color, sizeof(float[3]));
+    shader_set_parameter(lightdirect, "light_direction", dir, sizeof(float[3]));
+    //glUniform3fv(light_color, 1, color);
+    //glUniform3fv(light_direction, 1, dir);
     glDrawArrays(GL_TRIANGLES, 0, 6);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
     gl_unbindshader();
 }
 
@@ -412,7 +440,7 @@ void gl_drawtexture(Texture *t, float *pos, float rotation)
         pos = default_pos;
     }
 
-    matn tmat = alloca(sizeof(float) * 3 * 3);
+    matn tmat = alloca(sizeof(float[16]));
     matn_init(tmat, 3);
     float tsize[3] = {(float) t->w, (float) t->h, 1.0f};
     float invfbsize[3] = {(float) 1.0f / (float) acv_framebuffer_w(FRAMEBUFFER_OUTPUT),
@@ -428,11 +456,10 @@ void gl_drawtexture(Texture *t, float *pos, float rotation)
 
     gl_bindshader(drawtexture);
     gl_bindtexture(t, 0);
-    glBindBuffer(GL_ARRAY_BUFFER, UNIT_SQUARE);
-    gl_bindshaderattributes();
+    glBindVertexArray(UNIT_SQUARE_VAO);
     glUniformMatrix3fv(tmatloc, 1, false, tmat);
     glDrawArrays(GL_TRIANGLES, 0, 6);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
     gl_unbindtexture(0);
     gl_unbindshader();
 
@@ -475,8 +502,8 @@ void gl_drawbones(Armature *arm, int frame, float *mMat, float *vMat, float *pMa
     for(i = 0; i < arm->nbones; i++)
     {
         //TODO: remove
-        memcpy(&bones[i * 2].position, &arm->bones[i].head, sizeof(float) * 3);
-        memcpy(&bones[i * 2 + 1].position, &arm->bones[i].tail, sizeof(float) * 3);
+        memcpy(&bones[i * 2].position, &arm->bones[i].head, sizeof(float[3]));
+        memcpy(&bones[i * 2 + 1].position, &arm->bones[i].tail, sizeof(float[3]));
     }
     glUnmapBuffer(GL_ARRAY_BUFFER);
 
@@ -529,7 +556,8 @@ void gl_drawmodel(Mesh *mesh, Texture *t, float *mMat, float *vMat, float *pMat)
     gl_bindshaderattributes();
     gl_bindmesh(mesh);
 
-    glUniformMatrix4fv(tmatloc, 1, true, t_matrix);
+    //glUniformMatrix4fv(tmatloc, 1, true, t_matrix);
+    shader_set_parameter(drawmodel, "t_matrix", t_matrix, sizeof(float[16]));
     glUniform1i(bone_enloc, false);
     glDrawElements(GL_TRIANGLES, mesh->nfaces * 3, GL_UNSIGNED_SHORT, (void*) 0);
 
@@ -577,7 +605,9 @@ void gl_drawmodelskinned(struct Mesh *mesh,
     mat4 *bmat = alloca(sizeof(mat4) * arm->nbones);
     armature_matrices(arm, frame, bmat);
     glUniformMatrix4fv(boneloc, arm->nbones, true, (float*) bmat);
-    glUniform1i(bone_enloc, true);
+    int bones_enable = 1;
+    shader_set_parameter(drawmodel, "bones_enable", &bones_enable, sizeof(int));
+    //glUniform1i(bone_enloc, true);
     glDrawElements(GL_TRIANGLES, mesh->nfaces * 3, GL_UNSIGNED_SHORT, (void*) 0);
 
     gl_unbindmesh();
@@ -613,11 +643,10 @@ void gl_drawframebuffer(void)
     gl_bindtextures(framebuffer_textures(acv_framebuffers[FRAMEBUFFER_INPUT]), 
             framebuffer_ntextures(acv_framebuffers[FRAMEBUFFER_INPUT]));
     gl_bindshader(drawframebuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, UNIT_SQUARE);
-    gl_bindshaderattributes();
+    glBindVertexArray(UNIT_SQUARE_VAO);
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
     //gl_unbindframebuffer(FRAMEBUFFER_INPUT);
     gl_unbindshader();
 
@@ -642,13 +671,12 @@ void gl_processtexture(struct Texture *t, struct Shader *s)
     gl_bindshader(s);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(t->gltype, t->read->glid);
-    glBindBuffer(GL_ARRAY_BUFFER, UNIT_SQUARE);
-    gl_bindshaderattributes();
+    glBindVertexArray(UNIT_SQUARE_VAO);
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
     glBindTexture(t->gltype, 0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
     gl_unbindshader();
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, t->gltype, 0, 0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
