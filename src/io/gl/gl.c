@@ -132,6 +132,7 @@ void gl_init(int win_w, int win_h)
     glVertexAttribPointer(CW_POSITION,      3, GL_FLOAT,           false, 32, (void *) 0);
     glVertexAttribPointer(CW_NORMAL,        3, GL_SHORT,           true,  32, (void *) 12);
     glVertexAttribPointer(CW_UV,            2, GL_UNSIGNED_SHORT,  true,  32, (void *) 18);
+    glVertexAttribPointer(CW_MATERIAL,      1, GL_UNSIGNED_SHORT,  true,  32, (void *) 22);
     glVertexAttribPointer(CW_BONEIDS,       2, GL_UNSIGNED_BYTE,   false, 32, (void *) 24);
     glVertexAttribPointer(CW_BONEWEIGHTS,   2, GL_UNSIGNED_BYTE,   true,  32, (void *) 26);
     glBindVertexArray(0);
@@ -141,14 +142,9 @@ void gl_init(int win_w, int win_h)
 
     drawmodel = malloc(sizeof(Shader));
     shader_init(drawmodel, "clockwork/glsl/drawmodel");
-    shader_add_attrib(drawmodel, "position", 3, GL_FLOAT, false, 32, (void*) 0);
-    shader_add_attrib(drawmodel, "normal", 3, GL_SHORT, true, 32, (void*) 12);
-    shader_add_attrib(drawmodel, "uv", 2, GL_UNSIGNED_SHORT, true, 32, (void*) 18);
-    shader_add_attrib(drawmodel, "boneids", 2, GL_UNSIGNED_BYTE, false, 32, (void*) 24);
-    shader_add_attrib(drawmodel, "boneweights", 2, GL_UNSIGNED_BYTE, true, 32, (void*) 26);
-    shader_add_fragment_output(drawmodel, "fragColor");
-    shader_add_fragment_output(drawmodel, "fragNormal");
-    shader_add_texture_target(drawmodel, "tex0", 0);
+    shader_add_fragment_output(drawmodel, "outColor");
+    shader_add_fragment_output(drawmodel, "outNormal");
+    shader_add_texture_target(drawmodel, "inColor", 0);
 
 
     //process framebuffer
@@ -169,6 +165,7 @@ void gl_finalize(void)
 
 }
 
+//replace function with "enable default attribs" function
 static void gl_bindshaderattributes(void)
 {
     assert(acv_shader);
@@ -344,7 +341,6 @@ static int acv_framebuffer_h(int fb)
 void gl_lightambient(float color[3])
 {
     static Shader *lightambient;
-    static GLuint ambient_color;
     gl_swapioframebuffers();
 
     static int once = 1;
@@ -361,7 +357,6 @@ void gl_lightambient(float color[3])
         shader_add_fragment_output(lightambient, "outColor");
         shader_add_fragment_output(lightambient, "outNormal");
         shader_add_fragment_output(lightambient, "outLight");
-        ambient_color = glGetUniformLocation(lightambient->program, "ambient_color");
         once = 0;
     }
 
@@ -370,7 +365,6 @@ void gl_lightambient(float color[3])
     gl_bindtextures(framebuffer_textures(acv_framebuffers[FRAMEBUFFER_INPUT]), 
             framebuffer_ntextures(acv_framebuffers[FRAMEBUFFER_INPUT]));
     shader_set_parameter(lightambient, "ambient_color", color, sizeof(float[3]));
-    //glUniform3fv(ambient_color, 1, color);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
     gl_unbindshader();
@@ -381,8 +375,6 @@ void gl_lightambient(float color[3])
 void gl_lightdirect(float color[3], float dir[3])
 {
     static Shader *lightdirect;
-    static GLuint light_direction;
-    static GLuint light_color;
     gl_swapioframebuffers();
 
     static int once = 1;
@@ -398,8 +390,6 @@ void gl_lightdirect(float color[3], float dir[3])
         shader_add_fragment_output(lightdirect, "outColor");
         shader_add_fragment_output(lightdirect, "outNormal");
         shader_add_fragment_output(lightdirect, "outLight");
-        light_direction = glGetUniformLocation(lightdirect->program, "light_direction");
-        light_color = glGetUniformLocation(lightdirect->program, "light_color");
         once = 0;
     }
 
@@ -409,8 +399,6 @@ void gl_lightdirect(float color[3], float dir[3])
             framebuffer_ntextures(acv_framebuffers[FRAMEBUFFER_INPUT]));
     shader_set_parameter(lightdirect, "light_color", color, sizeof(float[3]));
     shader_set_parameter(lightdirect, "light_direction", dir, sizeof(float[3]));
-    //glUniform3fv(light_color, 1, color);
-    //glUniform3fv(light_direction, 1, dir);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
     gl_unbindshader();
@@ -514,7 +502,7 @@ void gl_drawbones(Armature *arm, int frame, float *mMat, float *vMat, float *pMa
     mat4_mult(pMat, t_matrix, t_matrix);
 
     gl_bindshader(drawbones);
-    gl_bindshaderattributes();
+    gl_bindshaderattributes(); //TODO: remove
     glUniformMatrix4fv(tmatloc, 1, true, t_matrix);
     glUniform1i(bone_enloc, true);
 
@@ -553,15 +541,14 @@ void gl_drawmodel(Mesh *mesh, Texture *t, float *mMat, float *vMat, float *pMat)
 
     gl_bindtexture(t, 0);
     gl_bindshader(drawmodel);
-    gl_bindshaderattributes();
-    gl_bindmesh(mesh);
+    glBindVertexArray(mesh->vao);
 
     //glUniformMatrix4fv(tmatloc, 1, true, t_matrix);
     shader_set_parameter(drawmodel, "t_matrix", t_matrix, sizeof(float[16]));
     glUniform1i(bone_enloc, false);
     glDrawElements(GL_TRIANGLES, mesh->nfaces * 3, GL_UNSIGNED_SHORT, (void*) 0);
+    glBindVertexArray(0);
 
-    gl_unbindmesh();
     gl_unbindtexture(0);
     gl_unbindshader();
 }
@@ -583,34 +570,31 @@ void gl_drawmodelskinned(struct Mesh *mesh,
     mat4_mult(vMat, t_matrix, t_matrix);
     mat4_mult(pMat, t_matrix, t_matrix);
 
+    int bones_enable = 1;
     static GLuint tmatloc;
     static GLuint nmatloc;
-    static GLuint bone_enloc;
     static GLuint boneloc;
     static int once = 1;
     if(once)
     {
         tmatloc = glGetUniformLocation(drawmodel->program, "t_matrix");
-        bone_enloc = glGetUniformLocation(drawmodel->program, "bones_enable");
         boneloc = glGetUniformLocation(drawmodel->program, "bones");
         once = 0;
     }
 
     gl_bindtexture(tex, 0);
     gl_bindshader(drawmodel);
-    gl_bindshaderattributes();
-    gl_bindmesh(mesh);
+    glBindVertexArray(mesh->vao);
 
-    glUniformMatrix4fv(tmatloc, 1, true, t_matrix);
     mat4 *bmat = alloca(sizeof(mat4) * arm->nbones);
     armature_matrices(arm, frame, bmat);
+    glUniformMatrix4fv(tmatloc, 1, true, t_matrix);
     glUniformMatrix4fv(boneloc, arm->nbones, true, (float*) bmat);
-    int bones_enable = 1;
     shader_set_parameter(drawmodel, "bones_enable", &bones_enable, sizeof(int));
-    //glUniform1i(bone_enloc, true);
     glDrawElements(GL_TRIANGLES, mesh->nfaces * 3, GL_UNSIGNED_SHORT, (void*) 0);
+    glBindVertexArray(0);
 
-    gl_unbindmesh();
+    //gl_unbindmesh();
     gl_unbindtexture(0);
     gl_unbindshader();
 }

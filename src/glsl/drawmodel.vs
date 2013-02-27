@@ -12,8 +12,8 @@ uniform mat4 bones[255];
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in vec2 uv;
-layout(location = 3) in vec2 boneids;       // TODO: uvec; requires VertexAttribIPointer
-layout(location = 4) in vec2 boneweights;
+layout(location = 4) in vec2 boneids;       // TODO: uvec; requires VertexAttribIPointer
+layout(location = 5) in vec2 boneweights;
 
 smooth out vec3 f_normal;
 smooth out vec2 f_uv;

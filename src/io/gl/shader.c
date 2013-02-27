@@ -119,17 +119,20 @@ GLuint shader_load(const char *shaderFile)
     glAttachShader(program, vshader);
     glAttachShader(program, fshader);
     glEnableVertexAttribArray(CW_POSITION);
+    glEnableVertexAttribArray(CW_NORMAL);
+    glEnableVertexAttribArray(CW_UV);
+    glEnableVertexAttribArray(CW_MATERIAL);
+    glEnableVertexAttribArray(CW_BONEIDS);
+    glEnableVertexAttribArray(CW_BONEWEIGHTS);
     glBindAttribLocation(program, CW_POSITION,      "position");
     glBindAttribLocation(program, CW_NORMAL,        "normal");
     glBindAttribLocation(program, CW_UV,            "uv");
     glBindAttribLocation(program, CW_MATERIAL,      "material");
     glBindAttribLocation(program, CW_BONEIDS,       "boneids");
     glBindAttribLocation(program, CW_BONEWEIGHTS,   "boneweights");
-    //glEnableVertexAttribArray(CW_NORMAL);
-    //glEnableVertexAttribArray(CW_POSITION);
-    //glEnableVertexAttribArray(CW_POSITION);
-    //glEnableVertexAttribArray(CW_POSITION);
-    //glEnableVertexAttribArray(CW_POSITION);
+    glBindFragDataLocation(program, CW_OUTCOLOR,    "outColor");
+    glBindFragDataLocation(program, CW_OUTNORMAL,   "outNormal");
+    glBindFragDataLocation(program, CW_OUTLIGHT,    "outLight");
     glLinkProgram(program);
 
     glGetProgramiv(program, GL_LINK_STATUS, &status);

@@ -105,6 +105,7 @@ int mesh_initff(Mesh *m, const char *filenm)
 #ifndef NO_GL
     //if(!err) 
     {
+        glGenVertexArrays(1, &m->vao);
         glGenBuffers(1, &m->vbo);
         glGenBuffers(1, &m->ibo);
         mesh_commit(m);
@@ -123,6 +124,7 @@ void mesh_finalize(Mesh *m)
     free(m->faces);
 
 #ifndef NO_GL
+    glDeleteVertexArrays(1, &m->vao);
     glDeleteBuffers(1, &m->vbo);
     glDeleteBuffers(1, &m->ibo);
 #endif
@@ -130,14 +132,26 @@ void mesh_finalize(Mesh *m)
 
 void mesh_commit(Mesh *m)
 {
+    glBindVertexArray(m->vao);
     glBindBuffer(GL_ARRAY_BUFFER, m->vbo);
     glBufferData(GL_ARRAY_BUFFER, m->nverts * sizeof(Mesh_vert), m->verts, GL_STATIC_DRAW); 
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, m->nfaces * sizeof(Mesh_face), m->faces, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    glEnableVertexAttribArray(CW_POSITION);
+    glEnableVertexAttribArray(CW_NORMAL);
+    glEnableVertexAttribArray(CW_UV);
+    //glEnableVertexAttribArray(CW_MATERIAL);
+    glEnableVertexAttribArray(CW_BONEIDS);
+    glEnableVertexAttribArray(CW_BONEWEIGHTS);
+    glVertexAttribPointer(CW_POSITION,      3, GL_FLOAT,           false, 32, (void *) 0);
+    glVertexAttribPointer(CW_NORMAL,        3, GL_SHORT,           true,  32, (void *) 12);
+    glVertexAttribPointer(CW_UV,            2, GL_UNSIGNED_SHORT,  true,  32, (void *) 18);
+    //glVertexAttribPointer(CW_MATERIAL,      1, GL_UNSIGNED_SHORT,  false, 32, (void *) 22);
+    glVertexAttribPointer(CW_BONEIDS,       2, GL_UNSIGNED_BYTE,   false, 32, (void *) 24);
+    glVertexAttribPointer(CW_BONEWEIGHTS,   2, GL_UNSIGNED_BYTE,   true,  32, (void *) 26);
+    glBindVertexArray(0);
 }
 
 /**

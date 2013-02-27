@@ -62,16 +62,16 @@ typedef struct Mesh_face {
  * in the custom '.mdl' format
  */
 typedef struct Mesh { 
-    uint32_t    nverts;        ///< number of vertices. @see mesh_vert
-    uint32_t    nfaces;        ///< number of faces. @see mesh_face
-    uint16_t    material;      ///< currently unused
+    uint32_t    nverts;             ///< number of vertices. @see mesh_vert
+    uint32_t    nfaces;             ///< number of faces. @see mesh_face
+    uint16_t    material;           ///< currently unused
     uint8_t     nbones;
     uint8_t     PADDING[1];
-    struct Mesh_vert *verts; ///< array of vertices
-    struct Mesh_face *faces; ///< array of faces
-    //GLuint vao;             ///< OpenGL vertex array object to hold bound state
-    GLuint      vbo;             ///< OpenGL vertex buffer object handle (GL_ARRAY_BUFFER)
-    GLuint      ibo;             ///< OpenGL index buffer object handle (GL_ELEMENT_ARRAY_BUFFER)
+    struct Mesh_vert *verts;        ///< array of vertices
+    struct Mesh_face *faces;        ///< array of faces
+    GLuint vao;                     ///< OpenGL vertex array object to hold bound state
+    GLuint      vbo;                ///< OpenGL vertex buffer object handle (GL_ARRAY_BUFFER)
+    GLuint      ibo;                ///< OpenGL index buffer object handle (GL_ELEMENT_ARRAY_BUFFER)
 } Mesh;
 
 int mesh_initff(Mesh *m, const char *filenm);   //

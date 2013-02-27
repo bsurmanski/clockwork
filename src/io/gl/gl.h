@@ -30,6 +30,13 @@ enum Vertex_Entry
     CW_BONEWEIGHTS  = 5
 };
 
+enum Fragment_Output
+{
+    CW_OUTCOLOR     = 0,
+    CW_OUTNORMAL    = 1,
+    CW_OUTLIGHT     = 2
+};
+
 enum Framebuffer_IO
 {
     FRAMEBUFFER_INPUT = 0,
