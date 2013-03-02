@@ -23,19 +23,26 @@ typedef struct Cubemap
     void *bits;
 } Cubemap;
 
-enum Cubemap_image
+enum CubemapImage
 {
-    CUBEMAP_POSITIVE_X,
-    CUBEMAP_POSITIVE_Y,
-    CUBEMAP_POSITIVE_Z,
-    CUBEMAP_NEGATIVE_X,
-    CUBEMAP_NEGATIVE_Y,
-    CUBEMAP_NEGATIVE_Z
+    CUBEMAP_POSITIVE_X = 0,
+    CUBEMAP_NEGATIVE_X = 1,
+    CUBEMAP_POSITIVE_Y = 2,
+    CUBEMAP_NEGATIVE_Y = 3,
+    CUBEMAP_POSITIVE_Z = 4,
+    CUBEMAP_NEGATIVE_Z = 5
 };
+
+typedef struct CubemapIndex
+{
+    enum CubemapImage image;
+    int s;
+    int t;
+} CubemapIndex;
 
 void cubemap_init(struct Cubemap *c, int options);
 void cubemap_finalize(struct Cubemap *c);
-void cubemap_load(struct Cubemap *c, enum Cubemap_image i, const char *filenm);
+void cubemap_load(struct Cubemap *c, enum CubemapImage i, const char *filenm);
 void cubemap_commit(struct Cubemap *c);
 void cubemap_fill(struct Cubemap *cubemap, uint32_t color);
 

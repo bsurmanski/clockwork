@@ -188,7 +188,7 @@ void box3_mtv(Box3 *a, Box3 *b, float out_dv[3])
     int i;
     for(i = 0; i < 3; i++)
     {
-        out_dv[i] = mtd(a->pos[i], a->dim[i], b->pos[i], b->dim[i]);
+        out_dv[i] = mtd(a->pos[i], a->dim[i], b->pos[i], b->dim[i]); //TODO: only keep max
     }
 }
 

@@ -8,6 +8,9 @@
 #ifndef _MODEL_H
 #define _MODEL_H
 
+#include "util/math/geom/ball.h"
+#include "util/struct/varray.h"
+
 struct Mesh;
 struct Texture;
 struct Pose;
@@ -16,23 +19,29 @@ struct Pose;
  * contains a sigle reference to a mesh, color texture, normal texture and armature.
  * each part is optional
  */
-typedef struct ModelComponent
+typedef struct ModelFeature
 {
-    struct Ball3 bounds;
-    struct Mesh *mesh;
-    struct Texture *color;
-    struct Texture *normal;
+    struct Ball3     bounds;
+    struct Mesh     *mesh;
+    struct Texture  *color;
+    struct Texture  *normal;
     struct Armature *armature;
-} ModelComponent;
+} ModelFeature;
 
 typedef struct Model
 {
-    int ncomponents;
-    struct ModelComponent *components;
+    int     refcount;
+    Varray  features;
 } Model;
 
 void model_init(Model *model);
 void model_finalize(Model *model);
-void model_addmesh(Model *model, Mesh *mesh, Texture *color, Texture *normal);
+void model_acquire(Model *model);
+void model_release(Model *model);
+void model_addfeature(  Model *model, 
+                        struct Mesh *mesh,
+                        struct Texture *color,
+                        struct Texture *normal,
+                        struct Armature *armature);
 
 #endif

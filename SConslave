@@ -56,6 +56,7 @@ sources = \
 "io/gl/armature.c", \
 "io/gl/shader.c", \
 "io/gl/texture.c", \
+"io/gl/model.c", \
 "io/gl/cubemap.c", \
 "io/gl/framebuffer.c", \
 ]

@@ -142,13 +142,13 @@ void mesh_commit(Mesh *m)
     glEnableVertexAttribArray(CW_POSITION);
     glEnableVertexAttribArray(CW_NORMAL);
     glEnableVertexAttribArray(CW_UV);
-    //glEnableVertexAttribArray(CW_MATERIAL);
+    glEnableVertexAttribArray(CW_MATERIAL);
     glEnableVertexAttribArray(CW_BONEIDS);
     glEnableVertexAttribArray(CW_BONEWEIGHTS);
     glVertexAttribPointer(CW_POSITION,      3, GL_FLOAT,           false, 32, (void *) 0);
     glVertexAttribPointer(CW_NORMAL,        3, GL_SHORT,           true,  32, (void *) 12);
     glVertexAttribPointer(CW_UV,            2, GL_UNSIGNED_SHORT,  true,  32, (void *) 18);
-    //glVertexAttribPointer(CW_MATERIAL,      1, GL_UNSIGNED_SHORT,  false, 32, (void *) 22);
+    glVertexAttribPointer(CW_MATERIAL,      1, GL_UNSIGNED_SHORT,  false, 32, (void *) 22);
     glVertexAttribPointer(CW_BONEIDS,       2, GL_UNSIGNED_BYTE,   false, 32, (void *) 24);
     glVertexAttribPointer(CW_BONEWEIGHTS,   2, GL_UNSIGNED_BYTE,   true,  32, (void *) 26);
     glBindVertexArray(0);

@@ -20,6 +20,7 @@
 #include "io/gl/mesh.h"
 #include "io/gl/armature.h"
 #include "io/gl/texture.h"
+#include "io/gl/model.h"
 #include "io/gl/shader.h"
 
 #include "gl.h"
@@ -180,7 +181,8 @@ static void gl_bindshaderattributes(void)
     }
 }
 
-//bind functions
+/* bind/unbind functions {{{*/
+/* bind functions {{{*/
 static void gl_bindshader(struct Shader *s)
 {
     acv_shader = s;
@@ -276,8 +278,9 @@ static void gl_bindframebuffer(struct Framebuffer *f, enum Framebuffer_IO io)
     assert((!acv_framebuffers[io] || acv_framebuffers[0] != acv_framebuffers[1]) 
             && "framebuffer cannot be both input and output");
 }
+/*}}}*/
 
-//unbind functions
+/* unbind functions {{{*/
 static void gl_unbindshader(void)
 {
     acv_shader = NULL;
@@ -315,6 +318,8 @@ static void gl_unbindframebuffer(enum Framebuffer_IO io)
         glDrawBuffers(1, &drawbuf);
     }
 }
+/*}}}*/
+/*}}}*/
 
 void gl_swapioframebuffers(void)
 {
@@ -337,7 +342,7 @@ static int acv_framebuffer_h(int fb)
     return (acv_framebuffers[fb] ? acv_framebuffers[fb]->h : WINDOW_HEIGHT);
 }
 
-//lighting
+/* lighting {{{*/
 void gl_lightambient(float color[3])
 {
     static Shader *lightambient;
@@ -403,8 +408,9 @@ void gl_lightdirect(float color[3], float dir[3])
     glBindVertexArray(0);
     gl_unbindshader();
 }
+/*}}}*/
 
-// draw2D
+/* draw2D {{{*/
 void gl_drawtexture(Texture *t, float *pos, float rotation)
 {
     static float default_pos[2] = {0.0f, 0.0f};
@@ -455,7 +461,36 @@ void gl_drawtexture(Texture *t, float *pos, float rotation)
     glEnable(GL_CULL_FACE);
 }
 
-// draw3D
+void gl_processtexture(struct Texture *t, struct Shader *s)
+{
+    assert(t->options & TEXTURE_DOUBLEBUFFERED);
+    assert(t->read != t->write);
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, processFBO);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, t->gltype, t->write->glid, 0);
+
+    gl_bindshader(s);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(t->gltype, t->read->glid);
+    glBindVertexArray(UNIT_SQUARE_VAO);
+
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    glBindTexture(t->gltype, 0);
+    glBindVertexArray(0);
+    gl_unbindshader();
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, t->gltype, 0, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+}
+/*}}}*/
+
+/* draw3D {{{*/
 void gl_drawbones(Armature *arm, int frame, float *mMat, float *vMat, float *pMat)
 {
     static Shader *drawbones;
@@ -515,9 +550,10 @@ void gl_drawbones(Armature *arm, int frame, float *mMat, float *vMat, float *pMa
     gl_unbindshader();
     glEnable(GL_DEPTH_TEST);
 }
+/*}}}*/
 
-//TODO: model struct
-void gl_drawmodel(Mesh *mesh, Texture *t, float *mMat, float *vMat, float *pMat)
+/*draw mesh {{{*/
+void mesh_draw_t(struct Mesh *mesh, struct Texture *texture, float *mMat, float *vMat, float *pMat)
 {
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
@@ -539,9 +575,9 @@ void gl_drawmodel(Mesh *mesh, Texture *t, float *mMat, float *vMat, float *pMat)
         once=0;
     }
 
-    gl_bindtexture(t, 0);
     gl_bindshader(drawmodel);
     glBindVertexArray(mesh->vao);
+    gl_bindtexture(texture, 0); //TODO: change to normal gl calls
 
     //glUniformMatrix4fv(tmatloc, 1, true, t_matrix);
     shader_set_parameter(drawmodel, "t_matrix", t_matrix, sizeof(float[16]));
@@ -553,13 +589,13 @@ void gl_drawmodel(Mesh *mesh, Texture *t, float *mMat, float *vMat, float *pMat)
     gl_unbindshader();
 }
 
-void gl_drawmodelskinned(struct Mesh *mesh, 
-                         struct Armature *arm,
-                         int frame,
-                         struct Texture *tex, 
-                         float *mMat, 
-                         float *vMat, 
-                         float *pMat)
+void mesh_draw_ts   (struct Mesh *mesh, 
+                     struct Texture *tex, 
+                     struct Armature *arm,
+                     int frame,
+                     float *mMat, 
+                     float *vMat, 
+                     float *pMat)
 {
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
@@ -595,6 +631,48 @@ void gl_drawmodelskinned(struct Mesh *mesh,
     glBindVertexArray(0);
 
     //gl_unbindmesh();
+    gl_unbindtexture(0);
+    gl_unbindshader();
+}
+/*}}}*/
+
+void model_draw(struct Model *model, float *mMat, float *vMat, float *pMat)
+{
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+
+    mat4 t_matrix;
+    mat4_identity(t_matrix);
+    mat4_mult(mMat, t_matrix, t_matrix);
+    mat4_mult(vMat, t_matrix, t_matrix);
+    mat4_mult(pMat, t_matrix, t_matrix);
+
+    static GLuint tmatloc;
+    static GLuint nmatloc;
+    static GLuint bone_enloc;
+    static int once = 1;
+    if(once)
+    {
+        tmatloc = glGetUniformLocation(drawmodel->program, "t_matrix");
+        bone_enloc = glGetUniformLocation(drawmodel->program, "bones_enable");
+        once=0;
+    }
+
+    gl_bindshader(drawmodel);
+    int i;
+    for(i = 0; i < varray_length(&model->features); i++)
+    {
+        const ModelFeature *feature = varray_get(&model->features, i);
+        glBindVertexArray(feature->mesh->vao);
+        gl_bindtexture(feature->color, 0); //TODO: change to normal gl calls
+
+        //glUniformMatrix4fv(tmatloc, 1, true, t_matrix);
+        shader_set_parameter(drawmodel, "t_matrix", t_matrix, sizeof(float[16]));
+        glUniform1i(bone_enloc, false);
+        glDrawElements(GL_TRIANGLES, feature->mesh->nfaces * 3, GL_UNSIGNED_SHORT, (void*) 0);
+        glBindVertexArray(0);
+    }
+
     gl_unbindtexture(0);
     gl_unbindshader();
 }
@@ -639,34 +717,6 @@ void gl_drawframebuffer(void)
         gl_bindframebuffer(f, FRAMEBUFFER_OUTPUT);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
-}
-
-void gl_processtexture(struct Texture *t, struct Shader *s)
-{
-    assert(t->options & TEXTURE_DOUBLEBUFFERED);
-    assert(t->read != t->write);
-
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_CULL_FACE);
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, processFBO);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, t->gltype, t->write->glid, 0);
-
-    gl_bindshader(s);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(t->gltype, t->read->glid);
-    glBindVertexArray(UNIT_SQUARE_VAO);
-
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-
-    glBindTexture(t->gltype, 0);
-    glBindVertexArray(0);
-    gl_unbindshader();
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, t->gltype, 0, 0);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
 }
 
 void gl_swapbuffers(void)
