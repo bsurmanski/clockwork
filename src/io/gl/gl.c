@@ -9,6 +9,7 @@
 #include <alloca.h>
 #include <assert.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <GL/glfw.h>
@@ -139,7 +140,6 @@ void gl_init(int win_w, int win_h)
     glBindVertexArray(0);
 
     //glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 
     drawmodel = malloc(sizeof(Shader));
     shader_init(drawmodel, "clockwork/glsl/drawmodel");

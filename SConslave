@@ -62,7 +62,7 @@ sources = \
 ]
 
 if GetOption('count'):
-    os.system('find '+ srcdir + ' -regex ".*\(c\|h\|lua\|frag\|vert\|glsl\)" | xargs wc')
+    os.system('find '+ srcdir + ' -regex ".*\.\(c\|h\|lua\|fs\|vs\|glsl\)" | xargs wc')
 
 if GetOption('doc'):
     os.system("doxygen doc/Doxyfile")

@@ -35,6 +35,28 @@ typedef float       vec3[3];
 typedef float       vec4[4];
 typedef float       quaternion[4];
 
+/*
+typedef union vec4 {
+    struct 
+    {
+        float x;
+        float y;
+        float z;
+        float w;
+    };
+
+    struct 
+    {
+        float r;
+        float g;
+        float b;
+        float a;
+    };
+
+    float v[4];
+} vec4;
+*/
+
 extern const float VEC4_ZERO[];
 extern const float VEC4_ONE[];
 extern const float VEC4_X[];
