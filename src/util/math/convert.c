@@ -28,16 +28,16 @@ float radians_to_degrees(float r)
  */
 void quaternion_to_mat4(quaternion q, mat4 m)
 {
-    float ww = q[W] * q[W];
-    float wx2 = 2.0f * q[W] * q[X];
-    float wy2 = 2.0f * q[W] * q[Y];
-    float wz2 = 2.0f * q[W] * q[Z];
-    float xx = q[X] * q[X];
-    float xy2 = 2.0f * q[X] * q[Y];
-    float xz2 = 2.0f * q[X] * q[Z];
-    float yy = q[Y] * q[Y];
-    float yz2 = 2.0f * q[Y] * q[Z];
-    float zz = q[Z] * q[Z];
+    float ww = q.w * q.w;
+    float wx2 = 2.0f * q.w * q.x;
+    float wy2 = 2.0f * q.w * q.y;
+    float wz2 = 2.0f * q.w * q.z;
+    float xx = q.x * q.x;
+    float xy2 = 2.0f * q.x * q.y;
+    float xz2 = 2.0f * q.x * q.z;
+    float yy = q.y * q.y;
+    float yz2 = 2.0f * q.y * q.z;
+    float zz = q.z * q.z;
 
     m[MAT_XX] = ww + xx - yy - zz;
     m[MAT_XY] = xy2 + wz2;
@@ -60,49 +60,52 @@ void quaternion_to_mat4(quaternion q, mat4 m)
     m[MAT_WW] = 1.0f;
 }
 
-void mat4_to_quaternion(mat4 m, quaternion q)
+quat mat4_to_quaternion(mat4 m)
 {
+    quat ret;
     if(m[MAT_XX] + m[MAT_YY] + m[MAT_ZZ] > 0.0f)
     {
         float t = m[MAT_XX] + m[MAT_YY] + m[MAT_ZZ] + 1.0f; 
         float s = fisqrt(t) * 0.5f;
 
-        q[W] = s * t;
-        q[Z] = (m[MAT_YX] - m[MAT_XY]) * s;
-        q[Y] = (m[MAT_XZ] - m[MAT_ZX]) * s;
-        q[X] = (m[MAT_ZY] - m[MAT_YZ]) * s;
+        ret.w = s * t;
+        ret.z = (m[MAT_YX] - m[MAT_XY]) * s;
+        ret.y = (m[MAT_XZ] - m[MAT_ZX]) * s;
+        ret.x = (m[MAT_ZY] - m[MAT_YZ]) * s;
     } else if(m[MAT_XX] + m[MAT_YY] + m[MAT_XX] > m[MAT_ZZ])
     {
         float t = m[MAT_XX] - m[MAT_YY] - m[MAT_ZZ] + 1.0f; 
         float s = fisqrt(t) * 0.5f;
 
-        q[X] = s * t;
-        q[Y] = (m[MAT_YX] + m[MAT_XY]) * s;
-        q[Z] = (m[MAT_XZ] + m[MAT_ZX]) * s;
-        q[W] = (m[MAT_ZY] - m[MAT_YZ]) * s;
+        ret.x = s * t;
+        ret.y = (m[MAT_YX] + m[MAT_XY]) * s;
+        ret.z = (m[MAT_XZ] + m[MAT_ZX]) * s;
+        ret.w = (m[MAT_ZY] - m[MAT_YZ]) * s;
     } else if (m[MAT_YY] > m[MAT_ZZ])
     {
         float t = -m[MAT_XX] + m[MAT_YY] - m[MAT_ZZ] + 1.0f; 
         float s = fisqrt(t) * 0.5f;
 
-        q[Y] = s * t;
-        q[X] = (m[MAT_YX] + m[MAT_XY]) * s;
-        q[W] = (m[MAT_XZ] - m[MAT_ZX]) * s;
-        q[Z] = (m[MAT_ZY] + m[MAT_YZ]) * s;
+        ret.y = s * t;
+        ret.x = (m[MAT_YX] + m[MAT_XY]) * s;
+        ret.w = (m[MAT_XZ] - m[MAT_ZX]) * s;
+        ret.z = (m[MAT_ZY] + m[MAT_YZ]) * s;
     } else {
         float t = -m[MAT_XX] - m[MAT_YY] + m[MAT_ZZ] + 1.0f; 
         float s = fisqrt(t) * 0.5f;
 
-        q[Z] = s * t;
-        q[W] = (m[MAT_YX] + m[MAT_XY]) * s;
-        q[X] = (m[MAT_XZ] - m[MAT_ZX]) * s;
-        q[Y] = (m[MAT_ZY] + m[MAT_YZ]) * s;
+        ret.z = s * t;
+        ret.w = (m[MAT_YX] + m[MAT_XY]) * s;
+        ret.x = (m[MAT_XZ] - m[MAT_ZX]) * s;
+        ret.y = (m[MAT_ZY] + m[MAT_YZ]) * s;
     }
-    quaternion_normalize(q);
+    quaternion_normalizep(&ret);
+    return ret;
 }
 
-void angles_to_quaternion(angles a, quaternion q)
+quat angles_to_quaternion(angles a)
 {
+    quat ret;
     float sp = sin(a[PITCH] / 2.0f); 
     float cp = cos(a[PITCH] / 2.0f);
     float sy = sin(a[YAW] / 2.0f); 
@@ -110,19 +113,20 @@ void angles_to_quaternion(angles a, quaternion q)
     float sr = sin(a[ROLL] / 2.0f); 
     float cr = cos(a[ROLL] / 2.0f);
 
-    q[W] = cp * cy * cr + sp * sy * sr;
-    q[X] = sp * cy * cr - cp * sy * sr;
-    q[Y] = cp * sp * cr + sp * cy * sr;
-    q[Z] = cp * cp * sr - sp * sy * cr;
+    ret.w = cp * cy * cr + sp * sy * sr;
+    ret.x = sp * cy * cr - cp * sy * sr;
+    ret.y = cp * sp * cr + sp * cy * sr;
+    ret.z = cp * cp * sr - sp * sy * cr;
+    return ret;
 }
 
 void quaternion_to_angles(quaternion q, angles a)
 {
-    a[PITCH]    = atan2(2.0f * q[W] * q[X] + q[Y] * q[Z],
-                        1.0f - (2.0f * (q[X] * q[X] + q[Y] * q[Y])));
-    a[YAW]      = asin(2.0f * (q[W] * q[Y] - q[Z] * q[X]));
-    a[ROLL]    = atan2(2.0f * q[W] * q[Z] + q[X] * q[Y],
-                        1.0f - (2.0f * (q[Y] * q[Y] + q[Z] * q[Z])));
+    a[PITCH]    = atan2(2.0f * q.w * q.x + q.y * q.z,
+                        1.0f - (2.0f * (q.x * q.x + q.y * q.y)));
+    a[YAW]      = asin(2.0f * (q.w * q.y - q.z * q.x));
+    a[ROLL]    = atan2(2.0f * q.w * q.z + q.x * q.y,
+                        1.0f - (2.0f * (q.y * q.y + q.z * q.z)));
 }
 
 void angles_to_mat4(angles a, mat4 m)

@@ -5,7 +5,6 @@ bin_PROGRAMS=cw
 cw_SOURCES= \
 io/file.c \
 io/gl/framebuffer.c \
-io/gl/fvmesh.c \
 io/gl/gl.c \
 io/gl/mesh.c \
 io/gl/shader.c \
@@ -40,7 +39,7 @@ util/time.c \
 #util/struct/tmesh.c \
 
 AUTOMAKE_OPTIONS = foreign
-CFLAGS= -std=c99 -Wall -Winit-self -pedantic 
+CFLAGS= -std=gnu99 -Wall -Winit-self -pedantic 
 LDFLAGS= -lGLEW -lGL -lm -llua
 
 srcobjs:=$(sort $(foreach f,$(cw_SOURCES),$(notdir $(f:.c=.o))))

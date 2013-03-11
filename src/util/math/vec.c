@@ -522,23 +522,23 @@ void vec3_print(const vec3 a)
 /**
  * sets the value of a 4 dimensional vector to (x,y,z,w)
  */
-void vec4_set(vec4 a, float x, float y, float z, float w)
+vec4 vec4_setp(float x, float y, float z, float w)
 {
-    a[X] = x;
-    a[Y] = y;
-    a[Z] = z;
-    a[W] = w;
+    vec4 a;
+    a.x = x;
+    a.y = y;
+    a.z = z;
+    a.w = w;
+    return a;
 }
 
 /**
  * copys a 4 dimensional vector from src to dst. src remains unmoddified
  */
-void vec4_copy(const vec4 src, vec4 dst)
+vec4 vec4_copyp(const vec4 *src)
 {
-    dst[X] = src[X];
-    dst[Y] = src[Y];
-    dst[Z] = src[Z];
-    dst[W] = src[W];
+    vec4 dst = *src;
+    return dst;
 }
 
 /**
@@ -548,12 +548,14 @@ void vec4_copy(const vec4 src, vec4 dst)
  * @param dest the destination of the addition, can be a unique vector 
  * or either of a and b
  */
-void vec4_add(const vec4 a, const vec4 b, vec4 dest)
+vec4 vec4_addp(const vec4 *a, const vec4 *b)
 {
-    dest[W] = a[W] + b[W];
-    dest[X] = a[X] + b[X];
-    dest[Y] = a[Y] + b[Y];
-    dest[Z] = a[Z] + b[Z];
+    vec4 ret;
+    ret.x = a->x + b->x;
+    ret.x = a->y + b->y;
+    ret.x = a->z + b->z;
+    ret.x = a->w + b->w;
+    return ret;
 }
 
 /**
@@ -563,29 +565,31 @@ void vec4_add(const vec4 a, const vec4 b, vec4 dest)
  * @param dest the destination of the subtraction, can be a unique vector 
  * or either of a and b
  */
-void vec4_sub(const vec4 a, const vec4 b, vec4 dest)
+vec4 vec4_subp(const vec4 *a, const vec4 *b)
 {
-    dest[W] = a[W] - b[W];
-    dest[X] = a[X] - b[X];
-    dest[Y] = a[Y] - b[Y];
-    dest[Z] = a[Z] - b[Z];
+    vec4 ret;
+    ret.x = a->x - b->x;
+    ret.x = a->y - b->y;
+    ret.x = a->z - b->z;
+    ret.x = a->w - b->w;
+    return ret;
 }
 
 /**
  * applies a dot-product (inner-product) to a pair of vectors or quaternions.
  * @returns a-dot-b
  */
-float vec4_dot(const vec4 a, const vec4 b)
+float vec4_dotp(const vec4 *a, const vec4 *b)
 {
-    return a[X] * b[X] + a[Y] * b[Y] + a[Z] * b[Z] + a[W] * b[W];
+    return a->x * b->x + a->y * b->y + a->z * b->z + a->w * b->w;
 }
 
 /**
  * @returns the length squared of the vector
  */
-float vec4_lensq(const vec4 a)
+float vec4_lensqp(const vec4 *a)
 {
-    return vec4_dot(a, a);
+    return vec4_dotp(a, a);
 }
 
 /**
@@ -593,26 +597,53 @@ float vec4_lensq(const vec4 a)
  * remains unchanged.
  * @param a the vector to normalize
  */
-void vec4_normalize(vec4 a)
+void vec4_normalizep(vec4 *a)
 {
-    float sqsum = vec4_lensq(a);
+    float sqsum = vec4_lensqp(a);
     if(!feq(sqsum, 0.0f))
     {
         float sqrtsumInv = 1.0f / sqrt(sqsum);
 
-        a[W] *= sqrtsumInv;
-        a[X] *= sqrtsumInv;
-        a[Y] *= sqrtsumInv;
-        a[Z] *= sqrtsumInv;
+        a->w *= sqrtsumInv;
+        a->x *= sqrtsumInv;
+        a->y *= sqrtsumInv;
+        a->z *= sqrtsumInv;
     }
 }
 
-void vec4_scale(vec4 a, const float scale)
+/**
+ * normalizes a vector to be unit length. if the vector is of length zero, the vector 
+ * remains unchanged.
+ * @param a the vector to normalize
+ */
+vec4 vec4_normalizedp(vec4 *a)
 {
-    a[W] *= scale;
-    a[X] *= scale;
-    a[Y] *= scale;
-    a[Z] *= scale;
+    vec4 ret;
+    float sqsum = vec4_lensqp(a);
+    if(!feq(sqsum, 0.0f))
+    {
+        float sqrtsumInv = 1.0f / sqrt(sqsum);
+
+        ret.x = sqrtsumInv * a->x;
+        ret.y = sqrtsumInv * a->y;
+        ret.z = sqrtsumInv * a->z;
+        ret.w = sqrtsumInv * a->w;
+    } else 
+    {
+        ret.x = 0.0f; 
+        ret.y = 0.0f; 
+        ret.z = 0.0f; 
+        ret.w = 0.0f; 
+    }
+    return ret;
+}
+
+void vec4_scalep(vec4 *a, const float scale)
+{
+    a->x *= scale;
+    a->y *= scale;
+    a->z *= scale;
+    a->w *= scale;
 }
 
 /**
@@ -622,12 +653,13 @@ void vec4_scale(vec4 a, const float scale)
  * @param refaxis the axis in which to project 'v' onto
  * @param dest storage for the result proj_refaxis(v)
  */
-void vec4_proj(const vec4 v, const vec4 refaxis, vec4 dest)
+vec4 vec4_projp(const vec4 *v, const vec4 *refaxis)
 {
-    vec4_copy(refaxis, dest);
-    float numer = vec4_dot(v, refaxis);
-    float denom = vec4_dot(refaxis, refaxis);
-    vec4_scale(dest, numer / denom);
+    vec4 ret  = *refaxis;
+    float numer = vec4_dotp(v, refaxis);
+    float denom = vec4_dotp(refaxis, refaxis);
+    vec4_scalep(&ret, numer / denom);
+    return ret;
 }
 
 /**
@@ -637,11 +669,11 @@ void vec4_proj(const vec4 v, const vec4 refaxis, vec4 dest)
  * @param refaxis the axis to orthogonalize relative to
  * @param dest the result of the orthogonalization
  */
-void vec4_orth(const vec4 v, const vec4 refaxis, vec4 dest)
+vec4 vec4_orthp(const vec4 *v, const vec4 *refaxis)
 {
-    vec4 tmp;
-    vec4_proj(v, refaxis, tmp);
-    vec4_sub(v, tmp, dest);
+    vec4 ret;
+    ret = vec4_projp(v, refaxis);
+    ret = vec4_subp(v, &ret);
 }
 
 /**
@@ -649,7 +681,8 @@ void vec4_orth(const vec4 v, const vec4 refaxis, vec4 dest)
  * @param result the vector to store the results. This will be clobbered
  * @param n the number of vectors to average, there must be at least this many vectors provided
  */
-void vec4_avg(vec4 result, int n, ...)
+/*
+vec4 vec4_avgp(int n, ...)
 {
     vec4_set(result, 0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -662,8 +695,9 @@ void vec4_avg(vec4 result, int n, ...)
         vec4_add(result, va_arg(vl, vec4), result);
     }
     vec4_scale(result, 1.0f/n);
-}
+}*/
 
+/* XXX todo
 void vec4_swizzle(vec4 v, int x, int y, int z, int w)
 {
     vec4 dst;
@@ -672,14 +706,14 @@ void vec4_swizzle(vec4 v, int x, int y, int z, int w)
     dst[Z] = v[z];
     dst[W] = v[w];
     vec4_copy(dst, v);
-}
+}*/
 
 /**
  * prints out a 4 dimensional vector to STDOUT
  */
-void vec4_print(vec4 a)
+void vec4_printp(vec4 *a)
 {
-    printf("%f, %f, %f, %f\n", a[X], a[Y], a[Z], a[W]);
+    printf("%f, %f, %f, %f\n", a->x, a->y, a->z, a->w);
 }
 
 /*
@@ -688,154 +722,176 @@ void vec4_print(vec4 a)
  ************* 
  */
 
-//Quaternion alias functions
-void  (*quaternion_copy)(const quaternion src, quaternion dst)                      = vec4_copy;
-float (*quaternion_dot)(const quaternion a, const quaternion b)                     = vec4_dot;
-void  (*quaternion_add)(const quaternion a, const quaternion b, quaternion dest)    = vec4_add;
-void  (*quaternion_sub)(const quaternion a, const quaternion b, quaternion dest)    = vec4_sub;
-void  (*quaternion_normalize)(quaternion a)                                         = vec4_normalize;
-float (*quaternion_lensq)(const quaternion a)                                       = vec4_lensq;
+//quat alias functions
+
+quat  (*quaternion_copyp)(const quat *src)             = vec4_copyp;
+float (*quaternion_dotp)(const quat *a, const quat *b) = vec4_dotp;
+quat  (*quaternion_addp)(const quat *a, const quat *b) = vec4_addp;
+quat  (*quaternion_subp)(const quat *a, const quat *b) = vec4_subp;
+void  (*quaternion_normalizep)(quat *a)                = vec4_normalizep;
+float (*quaternion_lensqp)(const quat *a)              = vec4_lensqp;
+
+
+#if 1
 
 /**
- * sets a quaternion to (w,x,y,z)
+ * loads the quat identity (1,0,0,0) into a quaternion
  */
-void quaternion_set(quaternion a, float w, float x, float y, float z)
+quat quaternion_identity(void)
 {
-    a[W] = w;
-    a[X] = x;
-    a[Y] = y;
-    a[Z] = z;
+    quat ret;
+    ret.w = 1.0f;
+    ret.x = 0.0f;
+    ret.y = 0.0f;
+    ret.z = 0.0f;
+    return ret;
 }
 
 /**
- * sets a quaternion to a rotation by 'angle' around the axis 'axis'
- * @param a the quaternion to clear and rotate
+ * sets a quat to (w,x,y,z)
+ */
+quat quaternion_set(float w, float x, float y, float z)
+{
+    quat ret;
+    ret.w = w;
+    ret.x = x;
+    ret.y = y;
+    ret.z = z;
+}
+
+/**
+ * sets a quat to a rotation by 'angle' around the axis 'axis'
+ * @param a the quat to clear and rotate
  * @param angle the angle to rotate
  * @param axis the axis to rotate about
  */
-void quaternion_set_rotation(quaternion a, float angle, vec3 axis)
+quat quaternion_set_rotation(float angle, vec3 axis)
 {
+    quat ret;
     vec3 naxis; // normalized axis
     vec3_copy(axis, naxis);
     vec3_normalize(naxis);
     float scale = sin(angle / 2.0f);
 
-    a[W] = cos(angle / 2.0f);
-    a[X] = naxis[X] * scale;
-    a[Y] = naxis[Y] * scale;
-    a[Z] = naxis[Z] * scale;
+    ret.w = cos(angle / 2.0f);
+    ret.x = naxis[X] * scale;
+    ret.y = naxis[Y] * scale;
+    ret.z = naxis[Z] * scale;
+    return ret;
 }
 
-void quaternion_lerp(quaternion a, quaternion b, float t, quaternion dst)
+quat quaternion_lerpp(quat *a, quat *b, float t)
 {
-    dst[X] = a[X] * t + b[X] * (1.0 - t);
-    dst[Y] = a[Y] * t + b[Y] * (1.0 - t);
-    dst[Z] = a[Z] * t + b[Z] * (1.0 - t);
-    dst[W] = a[W] * t + b[W] * (1.0 - t);
+    quat ret;
+    ret.x = a->x * t + b->x * (1.0 - t);
+    ret.y = a->y * t + b->y * (1.0 - t);
+    ret.z = a->z * t + b->z * (1.0 - t);
+    ret.w = a->w * t + b->w * (1.0 - t);
+    return ret;
 }
 
-void quaternion_slerp(quaternion a, quaternion b, float t, quaternion dst)
+quat quaternion_slerpp(quat *a, quat *b, float t)
 {
-
+    //TODO slerp
+    quat q = quaternion_set(0,0,0,0);
+    return q;
 }
 
 /**
- * loads the quaternion identity (1,0,0,0) into a quaternion
- */
-void quaternion_identity(quaternion a)
-{
-    quaternion_set(a, 1.0f, 0.0f, 0.0f, 0.0f);
-}
-
-/**
- * rotates a quaternion by 'angle' around the axis 'axis'
+ * rotates a quat by 'angle' around the axis 'axis'
  * all previous transformations remain, and the rotation is compounded
  * on top from a global reference point
- * @param a the quaternion to rotate. Must have a coherent value, 
+ * @param a the quat to rotate. Must have a coherent value, 
  * to set a base rotation, @see quaternion_set_rotation
  * @param angle the angle to rotate
  * @param axis the axis to rotate about
  */
-void quaternion_rotate(quaternion a, float angle, vec3 axis)
+void quaternion_rotatep(quat *a, float angle, vec3 axis)
 {
-    quaternion tmp;
-    quaternion_set_rotation(tmp, angle, axis);
-    quaternion_mult(a, tmp, a);
+    quat tmp;
+    tmp = quaternion_set_rotation(angle, axis);
+    *a = quaternion_multp(a, &tmp);
 }
 
 /**
- * the quaternion norm. (equal to the length squared, or a-dot-a)
+ * the quat norm. (equal to the length squared, or a-dot-a)
  * @returns norm(a)
  */
-float quaternion_norm(const quaternion a)
+float quaternion_normp(const quat *a)
 {
-    return quaternion_dot(a, a);
+    return quaternion_dotp(a, a);
 }
 
 /**
  * stores the complex conjugate of 'a' into variable 'dest'.
  * The conjugate is equal to (w, -x, -y, -z)
  * The complex conjugate is useful for rotating vectors
- * @param a the quaternion to find the conjugate of
+ * @param a the quat to find the conjugate of
  * @param dest where to store the conjugate
  */
-void quaternion_conjugate(const quaternion a, quaternion dest)
+quat quaternion_conjugatep(const quat *a)
 {
-    dest[X] = -a[X];
-    dest[Y] = -a[Y];
-    dest[Z] = -a[Z];
-    dest[W] = a[W];
+    quat ret;
+    ret.x = -a->x;
+    ret.y = -a->y;
+    ret.z = -a->z;
+    ret.w = a->w;
+    return ret;
 }
 
 /**
- * retrives the inverse of the quaternion 'a'.
+ * retrives the inverse of the quat 'a'.
  * the inverse is equal to conjugate(a)/norm(a)
- * @param a the quaternion to invert
+ * @param a the quat to invert
  * @param dest where to store the inversion
  */
-void quaternion_inverse(const quaternion a, quaternion dest)
+quat quaternion_inversep(const quat *a)
 {
-    float inv_norm = 1.0f / quaternion_norm(a);
-    quaternion_conjugate(a, dest);
-    dest[W] *= inv_norm;
-    dest[X] *= inv_norm;
-    dest[Y] *= inv_norm;
-    dest[Z] *= inv_norm;
+    quat ret;
+    float inv_norm = 1.0f / quaternion_normp(a);
+    ret = quaternion_conjugatep(a);
+    ret.x *= inv_norm;
+    ret.y *= inv_norm;
+    ret.z *= inv_norm;
+    ret.w *= inv_norm;
+    return ret;
 }
 
 /**
  * retrieves the 'real' value from the quaternion. this is 
  * equal to (w, 0, 0, 0).
  */
-void quaternion_real(const quaternion a, quaternion dest)
+quat quaternion_realp(const quat *a)
 {
-    quaternion_set(dest, a[W], 0.0f, 0.0f, 0.0f);
+    quat ret = quaternion_set(a->w, 0.0f, 0.0f, 0.0f);
+    return ret;
 }
 
 /**
  * retrieves the 'imaginary' value from the quaternion. this is 
  * equal to (0, x, y, z)
  */
-void quaternion_imaginary(const quaternion a, quaternion dest)
+quat quaternion_imaginaryp(const quat *a)
 {
-    quaternion_set(dest, 0.0f, a[X], a[Y], a[Z]);
+    quat ret = quaternion_set(0.0f, a->x, a->y, a->z);
+    return ret;
 }
 
 /**
  * multiplies 2 quaternions and stores the result in dest.
- * Multiplication is performed according to quaternion math
- * @param a the first quaternion to multiply
- * @param b the second quaternion to multiply
+ * Multiplication is performed according to quat math
+ * @param a the first quat to multiply
+ * @param b the second quat to multiply
  * @param dest the result of a*b. May be a pointer to a,b, or a unique quaternion
  */
-void quaternion_mult(const quaternion a, const quaternion b, quaternion dest)
+quat quaternion_multp(const quat *a, const quat *b)
 {
-    quaternion tmp;
-    tmp[W] = a[W] * b[W] - a[X] * b[X] - a[Y] * b[Y] - a[Z] * b[Z];
-    tmp[X] = a[W] * b[X] + a[X] * b[W] + a[Y] * b[Z] - a[Z] * b[Y]; 
-    tmp[Y] = a[W] * b[Y] + a[Y] * b[W] + a[Z] * b[X] - a[X] * b[Z]; 
-    tmp[Z] = a[W] * b[Z] + a[Z] * b[W] + a[X] * b[Y] - a[Y] * b[X]; 
-    quaternion_copy(tmp, dest);
+    quat ret;
+    ret.w = a->w * b->w - a->x * b->x - a->y * b->y - a->z * b->z;
+    ret.x = a->w * b->x + a->x * b->w + a->y * b->z - a->z * b->y; 
+    ret.y = a->w * b->y + a->y * b->w + a->z * b->x - a->x * b->z; 
+    ret.z = a->w * b->z + a->z * b->w + a->x * b->y - a->y * b->x; 
+    return ret;
 }
 
 /**
@@ -844,28 +900,37 @@ void quaternion_mult(const quaternion a, const quaternion b, quaternion dest)
  * @param b the divisor of the division
  * @param dest the result of a/b. May be a pointer to a,b, or a unique quaternion
  */
-void quaternion_div(const quaternion a, const quaternion b, quaternion dest)
+quat quaternion_divp(const quat *a, const quat *b)
 {
-    quaternion inv;
-    quaternion_inverse(b, inv);
-    quaternion_mult(a, inv, dest);
+    quat inv;
+    quat ret;
+    inv = quaternion_inversep(b);
+    ret = quaternion_multp(a, &inv);
+    return ret;
 }
 
 /**
- * rotates the vector b by the quaternion a, acording to quaternion math
+ * rotates the vector b by the quat a, acording to quat math
  */
-void quaternion_vecRotate(quaternion a, vec4 b)
+quat quaternion_vecRotatep(quat *a, vec4 *b)
 {
-    quaternion con;
-    quaternion_conjugate(a, con);
-    quaternion_mult(a, b, b);
-    quaternion_mult(b, con, b);
+    float btmp[4]; memcpy(&btmp, b, sizeof(float) * 4); //TODO fix quaternions
+    quat ret;
+    quat con;
+    con = quaternion_conjugatep(a);
+    ret = quaternion_multp(a, b);
+    ret = quaternion_mult(ret, con);
+    return ret;
 }
 
-void quaternion_orient(quaternion a, vec3 up, vec3 fwd)
+quat quaternion_orientp(vec3 up, vec3 fwd)
 {
+    quat ret;
     mat4 m;
     mat4_identity(m);
     mat4_orient(m, fwd, up);
-    mat4_to_quaternion(m, a);
+    ret = mat4_to_quaternion(m);
+    return ret;
 }
+
+#endif

@@ -74,7 +74,7 @@ void mat4_identity(mat4 mat);
 void mat4_set(mat4 m, int i, int j, float val);
 void mat4_setv(mat4 m, vec4 x, vec4 y, vec4 z, vec4 w);
 float mat4_get(mat4 m, int i, int j);
-void mat4_getv(mat4 m, int i, vec4 v);
+vec4 mat4_getv(mat4 m, int i);
 
 void mat4_copy(mat4 a, mat4 b);
 void mat4_transpose(mat4 m);
@@ -90,12 +90,12 @@ void mat4_frustum(mat4 m, float l, float r, float b, float t, float n, float f);
 void mat4_mult(mat4 left, mat4 right, mat4 dst);
 void mat4_pow(mat4 m, int pow);
 void mat4_orient(mat4 m, vec3 up, vec3 fwd);
-void mat4_multVec(mat4 m, vec4 v);
+void mat4_multVec(mat4 m, vec4 *v);
 void mat4_print(mat4 m);
 
 void mat4_lu(mat4 m, mat4 l, mat4 u);
 void mat4_fwdsubstitute(const mat4 const lower, const vec const b, vec x);
-void mat4_bwdsubstitute(const mat4 const upper, const vec4 const b, vec4 x);
+void mat4_bwdsubstitute(const mat4 const upper, const vec4 const *b, vec4 *x);
 void mat4_ludecompose(mat4 m, mat4 l, mat4 u);
 
 void mat4_x(mat4 m, vec4 v);

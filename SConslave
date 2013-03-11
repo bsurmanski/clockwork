@@ -8,18 +8,18 @@ srcdir="src/"
 libdir="lib/"
 libname="cw"
 
-libs = ["glfw", "GL", "m", "lua"]
+libs = ["glb", "glfw", "GL", "m", "lua"]
 win32_libs = ["mingw32", "glew32", "opengl32", "m", "pthreadGC2", "lua"]
 gcclibdir = []
 
-debugflags = ["-std=c99", "-D DEBUG", "-D GL_GLEXT_PROTOTYPES", "-O0", "-g", "-ftrapv", "-Wall",\
+debugflags = ["-std=gnu99", "-D DEBUG", "-D GL_GLEXT_PROTOTYPES", "-O0", "-g", "-ftrapv", "-Wall",\
 "-Winit-self", "-Wimplicit", "-Wreturn-type", "-Wuninitialized",\
-"-Wtrampolines", "-Wfloat-equal", "-Waddress", "-Wall", "-Wno-unused", "-pedantic",
+"-Wtrampolines", "-Wfloat-equal", "-Waddress", "-Wall", "-Wno-unused", #"-pedantic",
 "-Wshadow", "-Wstrict-prototypes", "-Wmissing-prototypes", "-Wno-pointer-to-int-cast", "-Wno-int-to-pointer-cast", "-Wunused-function"]
 
 releaseflags = ["-std=c99", "-D GL_GLEXT_PROTOTYPES" "-O3", "-ftrapv", "-Wall",\
 "-Winit-self", "-Wimplicit", "-Wreturn-type", "-Wuninitialized",\
-"-Wtrampolines", "-Wfloat-equal", "-Waddress", "-Wall", "-Wno-unused", "-pedantic",
+"-Wtrampolines", "-Wfloat-equal", "-Waddress", "-Wall", "-Wno-unused", #"-pedantic",
 "-Wshadow", "-Wstrict-prototypes", "-Wmissing-prototypes", "-Wno-pointer-to-int-cast", "-Wno-int-to-pointer-cast",\
 "-ftree-vectorize"]
 

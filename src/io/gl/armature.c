@@ -128,8 +128,13 @@ int armature_addpose(Armature *a)
         memmove(&a->poses[i * a->nframes], &a->poses[i * index], sizeof(Pose) * index);
 
         //initialize new pose to default (no rotation, translation, scale)
-        vec4_set(a->poses[i * a->nframes + index].rotation, 0, 0, 0, 1);
-        vec3_set(a->poses[i * a->nframes + index].position, 0, 0, 0);
+        a->poses[i * a->nframes + index].rotation[0] = 0.0f;
+        a->poses[i * a->nframes + index].rotation[1] = 0.0f;
+        a->poses[i * a->nframes + index].rotation[2] = 0.0f;
+        a->poses[i * a->nframes + index].rotation[3] = 1.0f;
+        a->poses[i * a->nframes + index].position[0] = 0.0f;
+        a->poses[i * a->nframes + index].position[1] = 0.0f;
+        a->poses[i * a->nframes + index].position[2] = 0.0f;
         a->poses[i * a->nframes + index].scale = 1; 
     }
     return index;
@@ -165,7 +170,7 @@ void armature_lerp(Armature *a, int frame1, int frame2, float step, mat4 *matric
     int i;
     for(i = 0; i < a->nbones; i++)
     {
-        vec4 quat;
+        vec4 q;
         vec3 pos;
         int scale;
         /*
@@ -187,7 +192,10 @@ void armature_matrices(Armature *a, int frame, mat4 *matrices)
         mat4 tmp;
         mat4_identity(matrices[i]);
 
-        quaternion_to_mat4(bpose->rotation, tmp);
+        quat q;
+        memcpy(&q, bpose->rotation, sizeof(float) * 4);
+             
+        quaternion_to_mat4(q, tmp);
 
         mat4_translate(matrices[i], -bone->head[0], -bone->head[1], -bone->head[2]);
         mat4_mult(matrices[i], tmp, matrices[i]);

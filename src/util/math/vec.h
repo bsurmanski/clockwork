@@ -32,10 +32,8 @@ typedef int32_t     ivec3[3];
 typedef float*      vec;
 typedef float       vec2[2];
 typedef float       vec3[3];
-typedef float       vec4[4];
-typedef float       quaternion[4];
 
-/*
+
 typedef union vec4 {
     struct 
     {
@@ -55,8 +53,11 @@ typedef union vec4 {
 
     float v[4];
 } vec4;
-*/
 
+typedef vec4 quaternion;
+typedef vec4 quat;
+
+/*
 extern const float VEC4_ZERO[];
 extern const float VEC4_ONE[];
 extern const float VEC4_X[];
@@ -73,7 +74,7 @@ extern const float *VEC3_Z;
 extern const float *VEC2_ZERO;
 extern const float *VEC2_ONE;
 extern const float *VEC2_X;
-extern const float *VEC2_Y;
+extern const float *VEC2_Y;*/
 
 // 2 Dimensional half precision signed integer vectors
 void    hvec2_to_vec2(hvec2 src, vec2 dst);
@@ -128,43 +129,80 @@ void    vec3_rand(vec3 res);
 void    vec3_print(const vec3 a);
 
 // 4 Dimensional floating point vector
-void    vec4_set(vec4 a, float x, float y, float z, float w);
-void    vec4_copy(const vec4 src, vec4 dst);
-void    vec4_add(const vec4 a, const vec4 b, vec4 dest);
-void    vec4_sub(const vec4 a, const vec4 b, vec4 dest);
-float   vec4_dot(const vec4 a, const vec4 b);
-float   vec4_lensq(const vec4 a);
-void    vec4_normalize(vec4 a);
-void    vec4_scale(vec4 a, const float scale);
-void    vec4_proj(const vec4 v, const vec4 refaxis, vec4 dest);
-void    vec4_avg(vec4 result, int n, ...);
-void    vec4_orth(const vec4 v, const vec4 refaxis, vec4 dest);
-void    vec4_swizzle(vec4 a, int x, int y, int z, int w);
-void    vec4_print(vec4 a);
+
+vec4    vec4_setp(float x, float y, float z, float w);
+vec4    vec4_copyp(const vec4 *src);
+vec4    vec4_addp(const vec4 *a, const vec4 *b);
+vec4    vec4_subp(const vec4 *a, const vec4 *b);
+float   vec4_dotp(const vec4 *a, const vec4 *b);
+float   vec4_lensqp(const vec4 *a);
+void    vec4_normalizep(vec4 *a);
+vec4    vec4_normalizedp(vec4 *a);
+void    vec4_scalep(vec4 *a, const float scale);
+vec4    vec4_projp(const vec4 *v, const vec4 *refaxis);
+vec4    vec4_orthp(const vec4 *v, const vec4 *refaxis);
+void    vec4_printp(vec4 *a);
+//void    vec4_swizzlep(vec4 a, int x, int y, int z, int w);
+vec4    vec4_avg(int n, ...); //XXX: cannot make avgp?
+
+#define vec4_set(x, y, z, w) vec4_setp(x,y,z,w)
+#define vec4_copy(src) vec4_copyp(&(src))
+#define vec4_add(a, b) vec4_addp(&(a), &(b))
+#define vec4_sub(a, b) vec4_subp(&(a), &(b))
+#define vec4_dot(a, b) vec4_dotp(&(a), &(b))
+#define vec4_lensq(a) vec4_lensqp(&(a))
+#define vec4_normalize(a) vec4_normalizep(&(a))
+#define vec4_normalized(a) vec4_normalizedp(&(a))
+#define vec4_scale(a, scale) vec4_scalep(&(a), scale)
+#define vec4_proj(v, refaxis) vec4_projp(&(v), &(refaxis))
+#define vec4_orth(v, refaxis) vec4_orthp(&(v), &(refaxis))
+#define vec4_print(a) vec4_printp(&(a))
+
+//quaternion vec4 alias functions
+
+extern quat  (*quaternion_copyp)(const quat *src);
+extern float (*quaternion_dotp)(const quat *a, const quat *b);
+extern quat  (*quaternion_addp)(const quat *a, const quat *b);
+extern quat  (*quaternion_subp)(const quat *a, const quat *b);
+extern void  (*quaternion_normalizep)(quat *a);
+extern float (*quaternion_lensqp)(const quat *a);
 
 
-//Quaternion vec4 alias functions
-extern void  (*quaternion_copy)(const quaternion src, quaternion dst);
-extern float (*quaternion_dot)(const quaternion a, const quaternion b);
-extern void  (*quaternion_add)(const quaternion a, const quaternion b, quaternion dest);
-extern void  (*quaternion_sub)(const quaternion a, const quaternion b, quaternion dest);
-extern void  (*quaternion_normalize)(quaternion a);
-extern float (*quaternion_lensq)(const quaternion a);
+quat    quaternion_identity(void);
+quat    quaternion_set(float w, float x, float y, float z);
+quat    quaternion_set_rotation(float angle, vec3 axis);
 
-void    quaternion_set(quaternion a, float w, float x, float y, float z);
-void    quaternion_set_rotation(quaternion a, float angle, vec3 axis);
-void    quaternion_lerp(quaternion a, quaternion b, float t, quaternion dst);
-void    quaternion_slerp(quaternion a, quaternion b, float t, quaternion dst);
-void    quaternion_identity(quaternion a);
-void    quaternion_rotate(quaternion a, float angle, vec3 axis);
-float   quaternion_norm(const quaternion a);
-void    quaternion_conjugate(const quaternion a, quaternion dest);
-void    quaternion_inverse(const quaternion a, quaternion dest);
-void    quaternion_real(const quaternion a, quaternion dest);
-void    quaternion_imaginary(const quaternion a, quaternion dest);
-void    quaternion_mult(const quaternion a, const quaternion b, quaternion dest);
-void    quaternion_div(const quaternion a, const quaternion b, quaternion dest);
-void    quaternion_vecRotate(quaternion a, vec4 b);
-void    quaternion_orient(quaternion a, vec3 up, vec3 fwd);
+quat    quaternion_lerpp(quat *a, quat *b, float t);
+quat    quaternion_slerpp(quat *a, quat *b, float t);
+void    quaternion_rotatep(quat *a, float angle, vec3 axis);
+float   quaternion_normp(const quat *a);
+quat    quaternion_conjugatep(const quat *a);
+quat    quaternion_inversep(const quat *a);
+quat    quaternion_realp(const quat *a);
+quat    quaternion_imaginaryp(const quat *a);
+quat    quaternion_multp(const quat *a, const quat *b);
+quat    quaternion_divp(const quat *a, const quat *b);
+quat    quaternion_vecRotatep(quat *a, vec4 *b);
+quat    quaternion_orientp(vec3 up, vec3 fwd);
+
+#define quaternion_copy(src)    quaternion_copyp(&(src))
+#define quaternion_dot(a, b)    quaternion_dotp(&(a), &(b))
+#define quaternion_add(a, b)    quaternion_add(&(a), &(b)
+#define quaternion_sub(a, b)    quaternion_sub(&(a), &(b)
+#define quaternion_normalize(a) quaternion_normalize(&(a))
+#define quaternion_lensq(a)     quaternion_lensq(&(a))
+
+#define quaternion_lerp(a, b, t)            quaternion_lerpp(&(a), &(b), t);
+#define quaternion_slerp(a, b, t)           quaternion_slerpp(&(a), &(b), t);
+#define quaternion_rotate(a, angle, axis)   quaternion_rotatep(&(a), angle, axis);
+#define quaternion_norm(a)                  quaternion_normp(&(a));
+#define quaternion_conjugate(a)             quaternion_conjugatep(&(a));
+#define quaternion_inverse(a)               quaternion_inversep(&(a));
+#define quaternion_real(a)                  quaternion_realp(&(a));
+#define quaternion_imaginary(a)             quaternion_imaginaryp(&(a));
+#define quaternion_mult(a, b)               quaternion_multp(&(a), &(b));
+#define quaternion_div(a, b)                quaternion_divp(&(a), &(b));
+#define quaternion_vecRotate(a, b)          quaternion_vecRotatep(&(a), &(b));
+#define quaternion_orient(a, up, fwd)       quaternion_orientp(&(a), up, fwd);
 
 #endif

@@ -18,10 +18,10 @@ float degrees_to_radians(float d);
 float radians_to_degrees(float r);
 
 
-void mat4_to_quaternion(mat4 m, quaternion q);
+quat mat4_to_quaternion(mat4 m);
 void quaternion_to_mat4(quaternion q, mat4 m);
 
-void angles_to_quaternion(angles a, quaternion q);
+quat angles_to_quaternion(angles a);
 void quaternion_to_angles(quaternion q, angles a);
 
 void angles_to_mat4(angles a, mat4 m);

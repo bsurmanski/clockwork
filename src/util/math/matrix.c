@@ -89,25 +89,25 @@ void mat4_set(mat4 m, int i, int j, float val)
  */
 void mat4_setv(mat4 m, vec4 x, vec4 y, vec4 z, vec4 w)
 {
-    m[MAT_XX] = x[X];
-    m[MAT_XY] = x[Y];
-    m[MAT_XZ] = x[Z];
-    m[MAT_XW] = x[W];
+    m[MAT_XX] = x.x;
+    m[MAT_XY] = x.y;
+    m[MAT_XZ] = x.z;
+    m[MAT_XW] = x.w;
 
-    m[MAT_YX] = y[X];
-    m[MAT_YY] = y[Y];
-    m[MAT_YZ] = y[Z];
-    m[MAT_YW] = y[W];
+    m[MAT_YX] = y.x;
+    m[MAT_YY] = y.y;
+    m[MAT_YZ] = y.z;
+    m[MAT_YW] = y.w;
 
-    m[MAT_ZX] = z[X];
-    m[MAT_ZY] = z[Y];
-    m[MAT_ZZ] = z[Z];
-    m[MAT_ZW] = z[W];
+    m[MAT_ZX] = z.x;
+    m[MAT_ZY] = z.y;
+    m[MAT_ZZ] = z.z;
+    m[MAT_ZW] = z.w;
 
-    m[MAT_WX] = w[X];
-    m[MAT_WY] = w[Y];
-    m[MAT_WZ] = w[Z];
-    m[MAT_WW] = w[W];
+    m[MAT_WX] = w.x;
+    m[MAT_WY] = w.y;
+    m[MAT_WZ] = w.z;
+    m[MAT_WW] = w.w;
 }
 
 /**
@@ -121,13 +121,15 @@ float mat4_get(mat4 m, int i, int j)
 /**
  * retrives a column vector from m, and stores it into 'v'
  */
-void mat4_getv(mat4 m, int j, vec4 v)
+vec4 mat4_getv(mat4 m, int j)
 {
+    vec4 ret;
     int i;
     for(i = 0; i < 4; i++)
     {
-        v[i] = m[i * 4 + j];
+        ret.v[i] = m[i * 4 + j];
     }
+    return ret;
 }
 
 /**
@@ -164,7 +166,7 @@ void mat4_transpose(mat4 m)
     tmp[MAT_WZ] = m[MAT_ZW];
     tmp[MAT_WW] = m[MAT_WW];
 
-    vec4_copy(tmp, m);
+    mat4_copy(tmp, m);
 }
 
 /**
@@ -380,14 +382,14 @@ void mat4_pow(mat4 m, int pow)
 /**
  * multiplies a vector 'v' by matrix 'm' according to matrix math definitions
  */
-void mat4_multVec(mat4 m, vec4 v)
+void mat4_multVec(mat4 m, vec4 *v)
 {
     vec4 temp;
-    temp[X] = m[MAT_XX] * v[X] + m[MAT_YX] * v[Y] + m[MAT_ZX] * v[Z] + m[MAT_WX] * v[W];
-    temp[Y] = m[MAT_XY] * v[X] + m[MAT_YY] * v[Y] + m[MAT_ZY] * v[Z] + m[MAT_WY] * v[W];
-    temp[Z] = m[MAT_XZ] * v[X] + m[MAT_YZ] * v[Y] + m[MAT_ZZ] * v[Z] + m[MAT_WZ] * v[W];
-    temp[W] = m[MAT_XW] * v[X] + m[MAT_YW] * v[Y] + m[MAT_ZW] * v[Z] + m[MAT_WW] * v[W];
-    memcpy(v, temp, sizeof(vec4));
+    temp.x = m[MAT_XX] * v->x + m[MAT_YX] * v->y + m[MAT_ZX] * v->z + m[MAT_WX] * v->w;
+    temp.y = m[MAT_XY] * v->x + m[MAT_YY] * v->y + m[MAT_ZY] * v->z + m[MAT_WY] * v->w;
+    temp.z = m[MAT_XZ] * v->x + m[MAT_YZ] * v->y + m[MAT_ZZ] * v->z + m[MAT_WZ] * v->w;
+    temp.w = m[MAT_XW] * v->x + m[MAT_YW] * v->y + m[MAT_ZW] * v->z + m[MAT_WW] * v->w;
+    memcpy(v, &temp, sizeof(vec4));
 }
 
 /**
@@ -451,9 +453,9 @@ void mat4_fwdsubstitute(const mat4 const lower, const vec const eq, vec sol)
     matn_fwdsubstitute((const matn const) lower, 4, (const vec const) eq, sol);
 }
 
-void mat4_bwdsubstitute(const mat4 const upper, const vec4 const eq, vec4 sol)
+void mat4_bwdsubstitute(const mat4 const upper, const vec4 const *eq, vec4 *sol)
 {
-    matn_bwdsubstitute((const matn const) upper, 4, (const vec const) eq, sol);
+    matn_bwdsubstitute((const matn const) upper, 4, (const vec const) eq, (vec) sol);
 }
 
 void mat4_lu(mat4 m, mat4 l, mat4 u)
@@ -461,6 +463,7 @@ void mat4_lu(mat4 m, mat4 l, mat4 u)
     matn_lu(m, 4, l, u);
 }
 
+/*
 void mat4_x(mat4 m, vec4 v)
 {
     vec4_set(v, m[MAT_XX], m[MAT_XY], m[MAT_XZ], m[MAT_XW]);
@@ -479,7 +482,7 @@ void mat4_z(mat4 m, vec4 v)
 void mat4_w(mat4 m, vec4 v)
 {
     vec4_set(v, m[MAT_WX], m[MAT_WY], m[MAT_WZ], m[MAT_WW]);
-}
+}*/
 
 
 /**
