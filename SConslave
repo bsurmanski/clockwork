@@ -40,12 +40,10 @@ sources = \
 "util/math/angles.c", \
 "util/math/geom/line.c", \
 "util/math/geom/spline.c", \
-"util/math/geom/tri.c", \
 "util/math/geom/ball.c", \
 "util/math/geom/box.c", \
 "util/script/luaapi.c", \
 "util/struct/kdtree.c", \
-"util/struct/octree.c", \
 "util/struct/iterator.c", \
 "util/struct/list.c", \
 "util/struct/varray.c", \

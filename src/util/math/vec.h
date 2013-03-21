@@ -27,12 +27,51 @@ typedef int16_t     hvec3[3];
 
 typedef int32_t*    ivec;
 typedef int32_t     ivec2[2];
-typedef int32_t     ivec3[3];
+//typedef int32_t     ivec3[3];
 
 typedef float*      vec;
 typedef float       vec2[2];
-typedef float       vec3[3];
+//typedef float       vec3[3];
 
+typedef union ivec3
+{
+    struct 
+    {
+        int32_t x;
+        int32_t y;
+        int32_t z;
+    };
+
+    struct 
+    {
+        int32_t r;
+        int32_t g;
+        int32_t b;
+        int32_t a;
+    };
+
+    int32_t v[3];
+} ivec3;
+
+typedef union vec3
+{
+    struct 
+    {
+        float x;
+        float y;
+        float z;
+    };
+
+    struct 
+    {
+        float r;
+        float g;
+        float b;
+        float a;
+    };
+
+    float v[3];
+} vec3;
 
 typedef union vec4 {
     struct 
@@ -89,7 +128,7 @@ void    uhvec2_set(uhvec2 a, uint16_t x, uint16_t y);
 bool    uhvec2_eq(uhvec2 a, uhvec2 b);
 
 // 3 Dimensional half precision signed integer vectors
-void    hvec3_to_vec3(hvec3 src, vec3 dst);
+vec3    hvec3_to_vec3(hvec3 src);
 void    vec3_to_hvec3(vec3 src, hvec3 dst);
 void    hvec3_set(hvec3 a, int16_t x, int16_t y, int16_t z);
 bool    hvec3_eq(hvec3 a, hvec3 b);
@@ -105,30 +144,53 @@ float   vec2_lensq(const vec2 a);
 void    vec2_normalize(vec2 a);
 void    vec2_rand(vec2 res);
 
-// 3 Dimensional floating point vector
-void    vec3_set(vec3 a, float x, float y, float z);
-void    vec3_copy(const vec3 src, vec3 dst);
-bool    vec3_eq(const vec3 a, const vec3 b);
-void    vec3_cmp(const vec3 a, const vec3 b, ivec3 cmp);
-float   vec3_dot(const vec3 a, const vec3 b);
-float   vec3_lensq(const vec3 a);
-float   vec3_len(const vec3 a);
-float   vec3_distsq(const vec3 a, const vec3 b);
-void    vec3_add(const vec3 a, const vec3 b, vec3 dest);
-void    vec3_sub(const vec3 a, const vec3 b, vec3 dest);
-void    vec3_normalize(vec3 a);
-void    vec3_scale(vec3 a, float val);
-void    vec3_cross(const vec3 a, const vec3 b, vec3 dest);
-void    vec3_proj(const vec3 v, const vec3 refaxis, vec3 dest);
-void    vec3_orth(const vec3 v, const vec3 refaxis, vec3 dest);
-void    vec3_avg(vec3 result, int n, ...);
-void    vec3_wavg(vec3 result, int n, ...);
-void    vec3_lavg(vec3 result, int n, vec *list);
-void    vec3_lwavg(vec3 result, int n, vec *list, float *weight);
-void    vec3_rand(vec3 res);
-void    vec3_print(const vec3 a);
+/*{{{ 3 Dimensional floating point vectors */
+vec3    vec3_setp(float x, float y, float z);
+vec3    vec3_copyp(const vec3 *src);
+bool    vec3_eqp(const vec3 *a, const vec3 *b);
+ivec3   vec3_cmpp(const vec3 *a, const vec3 *b);
+float   vec3_dotp(const vec3 *a, const vec3 *b);
+float   vec3_lensqp(const vec3 *a);
+float   vec3_lenp(const vec3 *a);
+float   vec3_distsqp(const vec3 *a, const vec3 *b);
+vec3    vec3_addp(const vec3 *a, const vec3 *b);
+vec3    vec3_subp(const vec3 *a, const vec3 *b);
+void    vec3_normalizep(vec3 *a);
+void    vec3_scalep(vec3 *a, float val);
+vec3    vec3_crossp(const vec3 *a, const vec3 *b);
+vec3    vec3_projp(const vec3 *v, const vec3 *refaxis);
+vec3    vec3_orthp(const vec3 *v, const vec3 *refaxis);
+vec3    vec3_avgp(int n, ...);
+vec3    vec3_wavgp(int n, ...);
+vec3    vec3_lavgp(int n, vec *list);
+vec3    vec3_lwavgp(int n, vec *list, float *weight);
+vec3    vec3_randp(void);
+void    vec3_printp(const vec3 *a);
 
-// 4 Dimensional floating point vector
+#define vec3_set(x, y, z)   vec3_setp((x), (y), (z));
+#define vec3_copy(src)      vec3_copyp(&(src));
+#define vec3_eq(a, b)       vec3_eqp(&(a), &(b));
+#define vec3_cmp(a, b)      vec3_cmpp(&(a), &(b));
+#define vec3_dot(a, b)      vec3_dotp(&(a), &(b));
+#define vec3_lensq(a)       vec3_lensqp(&(a));
+#define vec3_len(a)         vec3_lenp(&(a));
+#define vec3_distsq(a, b)   vec3_distsqp(&(a), &(b));
+#define vec3_add(a, b)      vec3_addp(&(a), &(b));
+#define vec3_sub(a, b)      vec3_subp(&(a), &(b));
+#define vec3_normalize(a)   vec3_normalizep(&(a));
+#define vec3_scale(a, val)  vec3_scalep(&(a), (val));
+#define vec3_cross(a, b)    vec3_crossp(&(a), &(b));
+#define vec3_proj(v, axis)  vec3_projp(&(v), &(axis));
+#define vec3_orth(v, axis)  vec3_orthp(&(v), &(axis));
+#define vec3_avg(n, ...)    vec3_avgp(n, __VA_ARGS__);
+#define vec3_wavg(n, ...)   vec3_wavgp(n, __VA_ARGS__);
+#define vec3_lavg(n, list)  vec3_lavgp(n, list);
+#define vec3_lwavg(n, list, weight) vec3_lwavgp(n, list, weight);
+#define vec3_rand()         vec3_randp()
+#define vec3_print(a)       vec3_printp(&(a))
+/*}}}*/
+
+/*{{{ 4 Dimensional floating point vectors */
 
 vec4    vec4_setp(float x, float y, float z, float w);
 vec4    vec4_copyp(const vec4 *src);
@@ -145,7 +207,7 @@ void    vec4_printp(vec4 *a);
 //void    vec4_swizzlep(vec4 a, int x, int y, int z, int w);
 vec4    vec4_avg(int n, ...); //XXX: cannot make avgp?
 
-#define vec4_set(x, y, z, w) vec4_setp(x,y,z,w)
+#define vec4_set(x, y, z, w) vec4_setp((x),(y),(z),(w))
 #define vec4_copy(src) vec4_copyp(&(src))
 #define vec4_add(a, b) vec4_addp(&(a), &(b))
 #define vec4_sub(a, b) vec4_subp(&(a), &(b))
@@ -157,8 +219,9 @@ vec4    vec4_avg(int n, ...); //XXX: cannot make avgp?
 #define vec4_proj(v, refaxis) vec4_projp(&(v), &(refaxis))
 #define vec4_orth(v, refaxis) vec4_orthp(&(v), &(refaxis))
 #define vec4_print(a) vec4_printp(&(a))
+/*}}}*/
 
-//quaternion vec4 alias functions
+/*{{{ quaternion vec4 alias functions*/
 
 extern quat  (*quaternion_copyp)(const quat *src);
 extern float (*quaternion_dotp)(const quat *a, const quat *b);
@@ -166,7 +229,6 @@ extern quat  (*quaternion_addp)(const quat *a, const quat *b);
 extern quat  (*quaternion_subp)(const quat *a, const quat *b);
 extern void  (*quaternion_normalizep)(quat *a);
 extern float (*quaternion_lensqp)(const quat *a);
-
 
 quat    quaternion_identity(void);
 quat    quaternion_set(float w, float x, float y, float z);
@@ -204,5 +266,6 @@ quat    quaternion_orientp(vec3 up, vec3 fwd);
 #define quaternion_div(a, b)                quaternion_divp(&(a), &(b));
 #define quaternion_vecRotate(a, b)          quaternion_vecRotatep(&(a), &(b));
 #define quaternion_orient(a, up, fwd)       quaternion_orientp(&(a), up, fwd);
+/*}}}*/
 
 #endif

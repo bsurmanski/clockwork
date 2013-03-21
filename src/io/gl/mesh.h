@@ -9,6 +9,7 @@
 #ifndef _MESH_H
 #define _MESH_H
 
+#include <glb/glb.h>
 #include <GL/glfw.h>
 #include <GL/gl.h>
 
@@ -69,6 +70,8 @@ typedef struct Mesh {
     uint8_t     PADDING[1];
     struct Mesh_vert *verts;        ///< array of vertices
     struct Mesh_face *faces;        ///< array of faces
+    struct GLBBuffer *vbuffer;
+    struct GLBBuffer *ibuffer;
     GLuint vao;                     ///< OpenGL vertex array object to hold bound state
     GLuint      vbo;                ///< OpenGL vertex buffer object handle (GL_ARRAY_BUFFER)
     GLuint      ibo;                ///< OpenGL index buffer object handle (GL_ELEMENT_ARRAY_BUFFER)
@@ -79,20 +82,5 @@ void mesh_finalize(Mesh *m);                  //
 
 void mesh_commit(Mesh *m);
 void mesh_write(Mesh *m, const char *filenm);
-
-float mesh_volume(Mesh *m);
-float mesh_surface_area(Mesh *m);
-
-bool mesh_contains_point(Mesh *m, vec3 point);
-
-
-//VERT
-void mesh_vert_normal(Mesh *m, uint16_t vert_i, vec3 norm);           //
-void mesh_vert_farthest(Mesh *m, vec3 point, vec3 farthest);
-void mesh_vert_closest(Mesh *m, vec3 point, vec3 closest);            //
-
-uint16_t mesh_face_closest(Mesh *m, uint16_t face_start, vec3 point);
-int mesh_face_indexOf_vert(Mesh *m, uint16_t face_i, uint16_t vert_i);
-void mesh_face_normal(Mesh *m, uint16_t face_i, vec3 normalbuf);          //
 
 #endif

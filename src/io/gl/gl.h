@@ -9,6 +9,7 @@
 #define _CWGL_H
 
 #include <stdint.h>
+#include <glb/glb.h>
 
 #define TEXTUREUNIT_COLOR 0
 #define TEXTUREUNIT_NORMAL 1
@@ -89,7 +90,7 @@ void gl_processtexture(struct Texture *t, struct Shader *s);
 void gl_drawbones(struct Armature *arm, int frame, float *mMat, float *vMat, float *pMat);
 
 void mesh_draw_t(struct Mesh *mesh, struct Texture *t, float *mMat, float *vMat, float *pMat); 
-void mesh_draw_ts(struct Mesh *mesh, struct Texture *t, struct Armature *arm, int frame, float *mMat, float *vMat, float *pMat); 
+void mesh_draw_ts(struct Mesh *mesh, GLBTexture *t, struct Armature *arm, int frame, float *mMat, float *vMat, float *pMat); 
 void mesh_draw_tn(struct Mesh *mesh, struct Texture *t, struct Texture *nmap, float *mMat, float *vMat, float *pMat); 
 
 void model_draw(struct Model *model, float *mMat, float *vMat, float *pMat); 

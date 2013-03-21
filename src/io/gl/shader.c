@@ -150,6 +150,7 @@ GLuint shader_load(const char *shaderFile)
     }
     free(vshaderSource);
     free(fshaderSource);
+
     return program;
 }
 

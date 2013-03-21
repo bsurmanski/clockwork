@@ -17,7 +17,6 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-#include "util/math/geom/tri.h"
 #include "util/math/vec.h"
 
 #include "mesh.h"
@@ -152,6 +151,21 @@ void mesh_commit(Mesh *m)
     glVertexAttribPointer(CW_BONEIDS,       2, GL_UNSIGNED_BYTE,   false, 32, (void *) 24);
     glVertexAttribPointer(CW_BONEWEIGHTS,   2, GL_UNSIGNED_BYTE,   true,  32, (void *) 26);
     glBindVertexArray(0);
+
+    struct GLBVertexLayout vlayout[] = 
+    {
+        {3, GL_FLOAT,           false,  32, 0},
+        {3, GL_SHORT,           true,   32, 12},
+        {2, GL_UNSIGNED_SHORT,  true,   32, 18},
+        {1, GL_UNSIGNED_SHORT,  false,  32, 22},
+        {2, GL_UNSIGNED_BYTE,   false,  32, 24},
+        {2, GL_UNSIGNED_BYTE,   true,   32, 26},
+    };
+
+    m->vbuffer = glbCreateVertexBuffer(m->nverts, sizeof(Mesh_vert), m->verts, 6, vlayout, GL_STATIC_DRAW, NULL);
+
+    m->ibuffer = glbCreateIndexBuffer(m->nfaces, sizeof(Mesh_face), m->faces, GL_UNSIGNED_SHORT, GL_STATIC_DRAW, NULL);
+
 }
 
 /**
@@ -186,99 +200,4 @@ void mesh_write(Mesh *m, const char *filenm)
     }
     close(fd);
     //return err;
-}
-
-float mesh_volume(Mesh *m)
-{
-    float sum;
-    int i;
-    for(i = 0, sum = 0; i < m->nfaces; i++)
-    {
-        tri3 tri;
-        uint16_t verts[3];
-        memcpy(verts, &m->faces[i], sizeof(uint16_t) * 3);
-        tri3_set(tri,
-                m->verts[verts[0]].position,
-                m->verts[verts[1]].position,
-                m->verts[verts[2]].position);
-        sum += tri3_signed_volume(tri);
-    }
-    return abs(sum);
-}
-
-float mesh_surface_area(Mesh *m)
-{
-    float sum;
-    int i;
-    for(i = 0, sum = 0; i < m->nfaces; i++)
-    {
-        tri3 tri;
-        uint16_t verts[3];
-        memcpy(verts, &m->faces[i], sizeof(uint16_t) * 3);
-        tri3_set(tri,
-                m->verts[verts[0]].position,
-                m->verts[verts[1]].position,
-                m->verts[verts[2]].position);
-        sum += tri3_area(tri);
-    }
-    return sum;
-}
-
-/*
- * VERT OPERATIONS
- */
-
-void mesh_vert_farthest(Mesh *m, vec3 point, vec3 max)
-{
-    vec3 tmp;
-    vec3_set(max, 0.0f, 0.0f, 0.0f);
-    float maxdistsq = 0.0f;
-
-    int i;
-    for(i = 0; i < m->nverts; i++)
-    {
-        float dist_i_sq;
-        vec3_sub(m->verts[i].position, point, tmp);
-        dist_i_sq = vec3_lensq(tmp);
-        if(dist_i_sq > maxdistsq)
-        {
-            vec3_copy(tmp, max);
-            maxdistsq = dist_i_sq;
-        }
-    }
-}
-
-//NOTE: im not quite sure why this is here
-void mesh_vert_closest(Mesh *m, vec3 point, vec3 min)
-{
-    assert(m->nverts > 0);
-
-    vec3 tmp;
-    vec3_sub(m->verts[0].position, point, tmp);
-    vec3_copy(tmp, min); //?
-    float mindistsq = vec3_lensq(tmp);
-
-    int i;
-    for(i = 0; i < m->nverts; i++)
-    {
-        float dist_i_sq;
-        vec3_sub(m->verts[i].position, point, tmp);
-        dist_i_sq = vec3_lensq(tmp);
-        if(dist_i_sq < mindistsq)
-        {
-            vec3_copy(tmp, min); //NOTE: should this be 'm->verts[i].position'?
-            mindistsq = dist_i_sq;
-        }
-    }
-}
-
-/*
- * FACE OPERATIONS
- */
-
-void mesh_face_normal(Mesh *m, uint16_t face_i, vec3 normalbuf)
-{
-    //hvec3_to_vec3(m->faces[face_i].normal, normalbuf);
-    //TODO
-    assert(0 && "TODO");
 }

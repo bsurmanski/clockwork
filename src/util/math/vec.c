@@ -127,11 +127,13 @@ bool uhvec2_eq(uhvec2 a, uhvec2 b)
 /**
  * converts a 3 dimensional 16-bit integer vector to a floating point vector
  */
-void hvec3_to_vec3(hvec3 src, vec3 dst)
+vec3 hvec3_to_vec3(hvec3 src)
 {
-    dst[X] = src[X] / 65535.0f;
-    dst[Y] = src[Y] / 65535.0f;
-    dst[Z] = src[Z] / 65535.0f;
+    vec3 ret;
+    ret.x = src[X] / 65535.0f;
+    ret.y = src[Y] / 65535.0f;
+    ret.z = src[Z] / 65535.0f;
+    return ret;
 }
 
 /**
@@ -140,9 +142,9 @@ void hvec3_to_vec3(hvec3 src, vec3 dst)
  */
 void vec3_to_hvec3(vec3 src, hvec3 dst)
 {
-    dst[X] = ftoh(src[X]);
-    dst[Y] = ftoh(src[Y]);
-    dst[Z] = ftoh(src[Z]);
+    dst[X] = ftoh(src.x);
+    dst[Y] = ftoh(src.y);
+    dst[Z] = ftoh(src.z);
 }
 
 /**
@@ -250,36 +252,41 @@ void vec2_rand(vec2 res)
 /**
  * sets the value of a 3 dimensional vector to (x,y,z)
  */
-void vec3_set(vec3 a, float x, float y, float z)
+vec3 vec3_setp(float x, float y, float z)
 {
-    a[X] = x;
-    a[Y] = y;
-    a[Z] = z;
+    vec3 ret;
+    ret.x = x;
+    ret.y = y;
+    ret.z = z;
+    return ret;
 }
 
 /**
  * copys the value of src to dest, component-wise
  */
-void vec3_copy(const vec3 src, vec3 dst)
+vec3 vec3_copyp(const vec3 *src)
 {
-    memcpy(dst, src, sizeof(vec3));
+    vec3 ret = *src;
+    return ret;
 }
 
-bool vec3_eq(const vec3 a, const vec3 b)
+bool vec3_eqp(const vec3 *a, const vec3 *b)
 {
-    return  feq(a[X], b[X]) &&
-            feq(a[Y], b[Y]) &&
-            feq(a[Z], b[Z]);
+    return  feq(a->x, b->x) &&
+            feq(a->y, b->y) &&
+            feq(a->z, b->z);
 }
 
 /**
  * component-wise comparison of a vector 
  */
-void vec3_cmp(const vec3 a, const vec3 b, ivec3 cmp)
+ivec3 vec3_cmpp(const vec3 *a, const vec3 *b)
 {
-   cmp[X] = fcmp(a[X], b[X]); 
-   cmp[Y] = fcmp(a[Y], b[Y]); 
-   cmp[Z] = fcmp(a[Z], b[Z]); 
+    ivec3 cmp;
+    cmp.x = fcmp(a->x, b->x); 
+    cmp.y = fcmp(a->y, b->y); 
+    cmp.z = fcmp(a->z, b->z); 
+    return cmp;
 }
 
 /**
@@ -287,18 +294,18 @@ void vec3_cmp(const vec3 a, const vec3 b, ivec3 cmp)
  * a, and b are vectors with 3 dimension
  * @return a_dot_b
  */
-float vec3_dot(const vec3 a, const vec3 b)
+float vec3_dotp(const vec3 *a, const vec3 *b)
 {
-    return a[X] * b[X] + a[Y] * b[Y] + a[Z] * b[Z];
+    return a->x * b->x + a->y * b->y + a->z * b->z;
 }
 
 /**
  * finds the squared length of a 3 dimensional vector
  * @returns squared length of a
  */
-float vec3_lensq(const vec3 a)
+float vec3_lensqp(const vec3 *a)
 {
-    return vec3_dot(a, a);
+    return vec3_dotp(a, a);
 }
 
 /**
@@ -306,15 +313,15 @@ float vec3_lensq(const vec3 a)
  * cost of the sqrt function, its encouraged to use lensq whenever possible
  * @returns length of a
  */
-float vec3_len(const vec3 a)
+float vec3_lenp(const vec3 *a)
 {
-    return sqrt(vec3_lensq(a));
+    return sqrt(vec3_lensqp(a));
 }
 
-float vec3_distsq(const vec3 a, const vec3 b)
+float vec3_distsqp(const vec3 *a, const vec3 *b)
 {
     vec3 tmp;
-    vec3_sub(a, b, tmp);
+    tmp = vec3_subp(a, b);
     return vec3_lensq(tmp);
 }
 
@@ -325,13 +332,15 @@ float vec3_distsq(const vec3 a, const vec3 b)
  *  of length 'len'
  *  @param a the first vector to add
  *  @param b the second vector to add
- *  @param dest the destination to store the addition of a+b
+ *  @returns the addition of a+b
  */
-void vec3_add(const vec3 a, const vec3 b, vec3 dest)
+vec3 vec3_addp(const vec3 *a, const vec3 *b)
 {
-    dest[X] = a[X] + b[X];
-    dest[Y] = a[Y] + b[Y];
-    dest[Z] = a[Z] + b[Z];
+    vec3 ret;
+    ret.x = a->x + b->x;
+    ret.y = a->y + b->y;
+    ret.z = a->z + b->z;
+    return ret;
 }
 
 /**
@@ -342,38 +351,40 @@ void vec3_add(const vec3 a, const vec3 b, vec3 dest)
  *  @param b the vector to subtract
  *  @param dest the destination to store the subtraction of a-b
  */
-void vec3_sub(const vec3 a, const vec3 b, vec3 dest)
+vec3 vec3_subp(const vec3 *a, const vec3 *b)
 {
-    dest[X] = a[X] - b[X];
-    dest[Y] = a[Y] - b[Y];
-    dest[Z] = a[Z] - b[Z];
+    vec3 ret;
+    ret.x = a->x - b->x;
+    ret.y = a->y - b->y;
+    ret.z = a->z - b->z;
+    return ret;
 }
 
 /**
  * normalizes the vector given by 'a'. After the operation, 'a' will be of unit
  * length. 
  */
-void vec3_normalize(vec3 a)
+void vec3_normalizep(vec3 *a)
 {
-    float sqsum = vec3_lensq(a);
+    float sqsum = vec3_lensqp(a);
     if(!feq(sqsum, 0.0f))
     {
         float sqrtsumInv = 1.0f / sqrt(sqsum);
 
-        a[X] *= sqrtsumInv;
-        a[Y] *= sqrtsumInv;
-        a[Z] *= sqrtsumInv;
+        a->x *= sqrtsumInv;
+        a->y *= sqrtsumInv;
+        a->z *= sqrtsumInv;
     }
 }
 
 /**
  * scales a 3 dimensional vector by the factor 'val'
  */
-void vec3_scale(vec3 a, float val) 
+void vec3_scalep(vec3 *a, float val) 
 {
-   a[X] *= val; 
-   a[Y] *= val; 
-   a[Z] *= val; 
+   a->x *= val; 
+   a->y *= val; 
+   a->z *= val; 
 }
 
 /**
@@ -382,13 +393,13 @@ void vec3_scale(vec3 a, float val)
  * is undefined for vectors more or less components than 3).
  * the cross product of axb is computed and stored in dest.
  */
-void vec3_cross(const vec3 a, const vec3 b, vec3 dest)
+vec3 vec3_crossp(const vec3 *a, const vec3 *b)
 {
-    vec3 tmp;
-    tmp[X] = a[Y] * b[Z] - a[Z] * b[Y];
-    tmp[Y] = a[Z] * b[X] - a[X] * b[Z];
-    tmp[Z] = a[X] * b[Y] - a[Y] * b[X];
-    vec3_copy(tmp, dest);
+    vec3 ret;
+    ret.x = a->y * b->z - a->z * b->y;
+    ret.y = a->z * b->x - a->x * b->z;
+    ret.z = a->x * b->y - a->y * b->x;
+    return ret;
 }
 
 /**
@@ -398,12 +409,16 @@ void vec3_cross(const vec3 a, const vec3 b, vec3 dest)
  * @param refaxis the axis in which to project 'v' onto
  * @param dest storage for the result proj_refaxis(v)
  */
-void vec3_proj(const vec3 v, const vec3 refaxis, vec3 dest)
+vec3 vec3_projp(const vec3 *v, const vec3 *axis)
 {
-    vec3_copy(refaxis, dest);
-    float numer = vec3_dot(v, refaxis);
-    float denom = vec3_dot(refaxis, refaxis);
-    vec3_scale(dest, numer / denom);
+    vec3 ret = *axis;
+    float numer = vec3_dotp(v, axis);
+    float denom = vec3_dotp(axis, axis);
+    if(fabs(denom) > FLT_EPSILON)
+    {
+        vec3_scale(ret, numer / denom);
+    }
+    return ret;
 }
 
 /**
@@ -413,11 +428,11 @@ void vec3_proj(const vec3 v, const vec3 refaxis, vec3 dest)
  * @param refaxis the axis to orthogonalize relative to
  * @param dest the result of the orthogonalization
  */
-void vec3_orth(const vec3 v, const vec3 refaxis, vec3 dest)
+vec3 vec3_orthp(const vec3 *v, const vec3 *axis)
 {
-    vec3 tmp;
-    vec3_proj(v, refaxis, tmp);
-    vec3_sub(v, tmp, dest);
+    vec3 ret = vec3_projp(v, axis);
+    ret = vec3_subp(v, &ret);
+    return ret;
 }
 
 /**
@@ -425,7 +440,8 @@ void vec3_orth(const vec3 v, const vec3 refaxis, vec3 dest)
  * @param result the vector to store the results. This will be clobbered
  * @param n the number of vectors to average, there must be at least this many vectors provided
  */
-void vec3_avg(vec3 result, int n, ...)
+/*
+vec3 vec3_avg(int n, ...)
 {
     vec3_set(result, 0.0f, 0.0f, 0.0f);
 
@@ -439,7 +455,7 @@ void vec3_avg(vec3 result, int n, ...)
     }
     va_end(vl);
     vec3_scale(result, 1.0f/n);
-}
+}*/
 
 /**
  * finds the weighted component wise averge of the provided vectors.
@@ -447,7 +463,8 @@ void vec3_avg(vec3 result, int n, ...)
  * alternating between the scale of the next vector, and the corrisponding
  * vector
  */
-void vec3_wavg(vec3 result, int n, ...)
+/*
+vec3 vec3_wavg(int n, ...)
 {
     vec3_set(result, 0.0f, 0.0f, 0.0f);
 
@@ -468,7 +485,7 @@ void vec3_wavg(vec3 result, int n, ...)
     vec3_scale(result, 1.0f/n);
 }
 
-void vec3_lavg(vec3 result, int n, vec *list)
+vec3 vec3_lavg(int n, vec *list)
 {
     vec3_set(result, 0.0f, 0.0f, 0.0f);
 
@@ -480,7 +497,7 @@ void vec3_lavg(vec3 result, int n, vec *list)
     vec3_scale(result, 1.0f/n);
 }
 
-void vec3_lwavg(vec3 result, int n, vec *list, float *weight)
+vec3 vec3_lwavg(int n, vec *list, float *weight)
 {
     vec3_set(result, 0.0f, 0.0f, 0.0f);
 
@@ -494,13 +511,16 @@ void vec3_lwavg(vec3 result, int n, vec *list, float *weight)
     }
     vec3_scale(result, 1.0f/n);
 }
+*/
 
-void vec3_rand(vec3 res)
+vec3 vec3_randp(void)
 {
-    res[X] = random_random() - 0.5f;
-    res[Y] = random_random() - 0.5f;
-    res[Z] = random_random() - 0.5f;
-    vec3_normalize(res);
+    vec3 v;
+    v.x = random_random() - 0.5f;
+    v.y = random_random() - 0.5f;
+    v.z = random_random() - 0.5f;
+    vec3_normalizep(&v);
+    return v;
 }
 
 
@@ -508,9 +528,9 @@ void vec3_rand(vec3 res)
  * prints out a 3 dimensional vector to STDOUT
  * useful for debugging
  */
-void vec3_print(const vec3 a)
+void vec3_printp(const vec3 *a)
 {
-    printf("%f, %f, %f\n", a[X], a[Y], a[Z]);
+    printf("%f, %f, %f\n", a->x, a->y, a->z);
 }
 
 /*
@@ -674,6 +694,7 @@ vec4 vec4_orthp(const vec4 *v, const vec4 *refaxis)
     vec4 ret;
     ret = vec4_projp(v, refaxis);
     ret = vec4_subp(v, &ret);
+    return ret;
 }
 
 /**
@@ -757,6 +778,7 @@ quat quaternion_set(float w, float x, float y, float z)
     ret.x = x;
     ret.y = y;
     ret.z = z;
+    return ret;
 }
 
 /**
@@ -769,14 +791,14 @@ quat quaternion_set_rotation(float angle, vec3 axis)
 {
     quat ret;
     vec3 naxis; // normalized axis
-    vec3_copy(axis, naxis);
-    vec3_normalize(naxis);
+    naxis = axis;
+    vec3_normalizep(&naxis);
     float scale = sin(angle / 2.0f);
 
     ret.w = cos(angle / 2.0f);
-    ret.x = naxis[X] * scale;
-    ret.y = naxis[Y] * scale;
-    ret.z = naxis[Z] * scale;
+    ret.x = naxis.x * scale;
+    ret.y = naxis.y * scale;
+    ret.z = naxis.z * scale;
     return ret;
 }
 
@@ -928,7 +950,7 @@ quat quaternion_orientp(vec3 up, vec3 fwd)
     quat ret;
     mat4 m;
     mat4_identity(m);
-    mat4_orient(m, fwd, up);
+    mat4_orient(m, &fwd, &up);
     ret = mat4_to_quaternion(m);
     return ret;
 }

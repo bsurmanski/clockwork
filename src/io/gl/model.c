@@ -35,7 +35,7 @@ void model_release(Model *model)
 
 void model_addfeature(  Model *model, 
                         struct Mesh *mesh,
-                        struct Texture *color,
+                        GLBTexture *color,
                         struct Texture *normal,
                         struct Armature *armature)
 {

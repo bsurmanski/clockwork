@@ -89,7 +89,7 @@ void mat4_frustum(mat4 m, float l, float r, float b, float t, float n, float f);
 //TODO:mat4_ortho(mat4 m, float l, float r, float b, float t, float n, float f);
 void mat4_mult(mat4 left, mat4 right, mat4 dst);
 void mat4_pow(mat4 m, int pow);
-void mat4_orient(mat4 m, vec3 up, vec3 fwd);
+void mat4_orient(mat4 m, vec3 *up, vec3 *fwd);
 void mat4_multVec(mat4 m, vec4 *v);
 void mat4_print(mat4 m);
 

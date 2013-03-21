@@ -10,6 +10,7 @@
 
 #include "util/math/geom/ball.h"
 #include "util/struct/varray.h"
+#include <glb/glb.h>
 
 struct Mesh;
 struct Texture;
@@ -23,7 +24,8 @@ typedef struct ModelFeature
 {
     struct Ball3     bounds;
     struct Mesh     *mesh;
-    struct Texture  *color;
+    GLBTexture      *color;
+    //struct Texture  *color;
     struct Texture  *normal;
     struct Armature *armature;
 } ModelFeature;
@@ -40,7 +42,7 @@ void model_acquire(Model *model);
 void model_release(Model *model);
 void model_addfeature(  Model *model, 
                         struct Mesh *mesh,
-                        struct Texture *color,
+                        GLBTexture  *color,
                         struct Texture *normal,
                         struct Armature *armature);
 

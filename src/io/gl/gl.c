@@ -15,8 +15,11 @@
 #include <GL/glfw.h>
 #include <GL/gl.h>
 
+#include <glb/glb.h>
+
 #include "util/math/convert.h"
 #include "util/math/matrix.h"
+#include "util/math/vec.h"
 #include "io/gl/framebuffer.h"
 #include "io/gl/mesh.h"
 #include "io/gl/armature.h"
@@ -38,7 +41,11 @@ static Framebuffer  *acv_framebuffers[2]    = {NULL};
 
 static GLuint processFBO;
 static Shader *drawmodel        = NULL;
+static GLBProgram *glbdrawmodel = NULL;
+static GLBFramebuffer *glbframebuffer = NULL;
 static Framebuffer framebuffers[2];
+
+static vec3 ambient;
 
 GLuint UNIT_SQUARE_VAO;
 GLuint UNIT_SQUARE;
@@ -147,6 +154,56 @@ void gl_init(int win_w, int win_h)
     shader_add_fragment_output(drawmodel, "outNormal");
     shader_add_texture_target(drawmodel, "inColor", 0);
 
+    /*{{{ XXX debug*/
+    printf("current\n");
+    int max_attribs;
+    glGetProgramiv(drawmodel->program, GL_ACTIVE_ATTRIBUTES, &max_attribs);
+    int i;
+    for(i = 0; i < max_attribs; i++)
+    {
+        GLchar buf[64]; 
+        GLint size;
+        GLenum type;
+        glGetActiveAttrib(drawmodel->program, i, 64, NULL, &size, &type, buf);
+
+        printf("attrib: %d, %s, %s\n", i, glbTypeString(type), buf);
+    }
+    printf("...\n");
+/*}}}*/
+
+    glbdrawmodel = glbCreateProgram(NULL);
+    int err = 
+    glbProgramAttachNewShaderSourceFile(glbdrawmodel, 
+                                        "clockwork/glsl/drawmodel.vs", 
+                                        GL_VERTEX_SHADER);
+    glbProgramAttachNewShaderSourceFile(glbdrawmodel, 
+                                        "clockwork/glsl/drawmodel.fs", 
+                                        GL_FRAGMENT_SHADER);
+   
+    glbframebuffer = glbCreateFramebuffer(NULL);
+    GLBTexture *fb_color[4] = {
+        glbCreateTexture(0, GLB_RGBA, win_w, win_h, 1, NULL, NULL), // color
+        glbCreateTexture(0, GLB_RGBA, win_w, win_h, 1, NULL, NULL), // normal
+        glbCreateTexture(0, GLB_RGBA, win_w, win_h, 1, NULL, NULL), // light front
+        glbCreateTexture(0, GLB_RGBA, win_w, win_h, 1, NULL, NULL), // light back
+        };
+    GLBTexture *fb_depth = glbCreateTexture(0, GLB_DEPTH, win_w, win_h, 1, NULL, NULL);
+    GLBTexture *fb_stencil = glbCreateTexture(0, GLB_STENCIL, win_w, win_h, 1, NULL, NULL);
+    glbFramebufferTexture(glbframebuffer, fb_color[0]);
+    glbFramebufferTexture(glbframebuffer, fb_color[1]);
+    glbFramebufferTexture(glbframebuffer, fb_color[2]);
+    glbFramebufferTexture(glbframebuffer, fb_color[3]);
+    glbFramebufferTexture(glbframebuffer, fb_depth);
+    glbFramebufferTexture(glbframebuffer, fb_stencil);
+
+    // framebuffer is now owner of textures
+    glbReleaseTexture(fb_color[0]);
+    glbReleaseTexture(fb_color[1]);
+    glbReleaseTexture(fb_color[2]);
+    glbReleaseTexture(fb_color[3]);
+    glbReleaseTexture(fb_depth);
+    glbReleaseTexture(fb_stencil);
+
 
     //process framebuffer
     glGenFramebuffers(1, &processFBO);
@@ -163,7 +220,7 @@ void gl_init(int win_w, int win_h)
 
 void gl_finalize(void)
 {
-
+    glfwCloseWindow();
 }
 
 //replace function with "enable default attribs" function
@@ -348,9 +405,19 @@ void gl_lightambient(float color[3])
     static Shader *lightambient;
     gl_swapioframebuffers();
 
+    static GLBProgram *glbprogram;
     static int once = 1;
     if(once)
     {
+        /*
+        glbprogram = glbCreateProgram(NULL);
+        glbProgramAttachNewShaderSourceFile(glbprogram, 
+                "clockwork/glsl/lighting/ambient.vs", GLB_VERTEX_SHADER);
+        glbProgramAttachNewShaderSourceFile(glbprogram, 
+                "clockwork/glsl/lighting/ambient.fs", GLB_FRAGMENT_SHADER);
+                */
+        //TODO: rest of shader
+
         lightambient = malloc(sizeof(Shader));
         shader_init(lightambient, "clockwork/glsl/lighting/ambient");
         shader_add_attrib(lightambient, "position", 2, GL_FLOAT, false, 32, (void*) 0);
@@ -373,6 +440,9 @@ void gl_lightambient(float color[3])
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
     gl_unbindshader();
+
+
+    ambient = vec3_add(color, ambient);
 }
 
 //TODO: buffer directional light, drawing 8/16 lights at a time
@@ -590,7 +660,7 @@ void mesh_draw_t(struct Mesh *mesh, struct Texture *texture, float *mMat, float 
 }
 
 void mesh_draw_ts   (struct Mesh *mesh, 
-                     struct Texture *tex, 
+                     GLBTexture *tex, 
                      struct Armature *arm,
                      int frame,
                      float *mMat, 
@@ -606,33 +676,16 @@ void mesh_draw_ts   (struct Mesh *mesh,
     mat4_mult(vMat, t_matrix, t_matrix);
     mat4_mult(pMat, t_matrix, t_matrix);
 
-    int bones_enable = 1;
-    static GLuint tmatloc;
-    static GLuint nmatloc;
-    static GLuint boneloc;
-    static int once = 1;
-    if(once)
-    {
-        tmatloc = glGetUniformLocation(drawmodel->program, "t_matrix");
-        boneloc = glGetUniformLocation(drawmodel->program, "bones");
-        once = 0;
-    }
-
-    gl_bindtexture(tex, 0);
-    gl_bindshader(drawmodel);
-    glBindVertexArray(mesh->vao);
-
     mat4 *bmat = alloca(sizeof(mat4) * arm->nbones);
     armature_matrices(arm, frame, bmat);
-    glUniformMatrix4fv(tmatloc, 1, true, t_matrix);
-    glUniformMatrix4fv(boneloc, arm->nbones, true, (float*) bmat);
-    shader_set_parameter(drawmodel, "bones_enable", &bones_enable, sizeof(int));
-    glDrawElements(GL_TRIANGLES, mesh->nfaces * 3, GL_UNSIGNED_SHORT, (void*) 0);
-    glBindVertexArray(0);
 
-    //gl_unbindmesh();
-    gl_unbindtexture(0);
-    gl_unbindshader();
+    static bool TRUE = 1;
+    glbProgramTexture(glbdrawmodel, GLB_FRAGMENT_SHADER, 0, tex);
+    glbProgramUniform(glbdrawmodel, GLB_VERTEX_SHADER, 0, sizeof(bool), &TRUE);
+    glbProgramUniform(glbdrawmodel, GLB_VERTEX_SHADER, 1, sizeof(float[16]), t_matrix);
+    glbProgramUniform(glbdrawmodel, GLB_VERTEX_SHADER, 2, sizeof(float[16]) * arm->nbones, bmat);
+    glbProgramOutput(glbdrawmodel, glbframebuffer);
+    glbProgramDrawIndexed(glbdrawmodel, mesh->vbuffer, mesh->ibuffer);
 }
 /*}}}*/
 
@@ -646,35 +699,19 @@ void model_draw(struct Model *model, float *mMat, float *vMat, float *pMat)
     mat4_mult(mMat, t_matrix, t_matrix);
     mat4_mult(vMat, t_matrix, t_matrix);
     mat4_mult(pMat, t_matrix, t_matrix);
+    //mat4_transpose(t_matrix);
 
-    static GLuint tmatloc;
-    static GLuint nmatloc;
-    static GLuint bone_enloc;
-    static int once = 1;
-    if(once)
-    {
-        tmatloc = glGetUniformLocation(drawmodel->program, "t_matrix");
-        bone_enloc = glGetUniformLocation(drawmodel->program, "bones_enable");
-        once=0;
-    }
-
-    gl_bindshader(drawmodel);
     int i;
     for(i = 0; i < varray_length(&model->features); i++)
     {
+        static int FALSE = 0;
         const ModelFeature *feature = varray_get(&model->features, i);
-        glBindVertexArray(feature->mesh->vao);
-        gl_bindtexture(feature->color, 0); //TODO: change to normal gl calls
+        glbProgramTexture(glbdrawmodel, GLB_FRAGMENT_SHADER, 0, feature->color);
+        glbProgramUniform(glbdrawmodel, GLB_VERTEX_SHADER, 0, sizeof(int), &FALSE);
+        glbProgramUniform(glbdrawmodel, GLB_VERTEX_SHADER, 1, sizeof(float[16]), t_matrix);
+        glbProgramDrawIndexed(glbdrawmodel, feature->mesh->vbuffer, feature->mesh->ibuffer);
 
-        //glUniformMatrix4fv(tmatloc, 1, true, t_matrix);
-        shader_set_parameter(drawmodel, "t_matrix", t_matrix, sizeof(float[16]));
-        glUniform1i(bone_enloc, false);
-        glDrawElements(GL_TRIANGLES, feature->mesh->nfaces * 3, GL_UNSIGNED_SHORT, (void*) 0);
-        glBindVertexArray(0);
     }
-
-    gl_unbindtexture(0);
-    gl_unbindshader();
 }
 
 void gl_drawframebuffer(void)

@@ -396,35 +396,35 @@ void mat4_multVec(mat4 m, vec4 *v)
  * orients a matrix such that it is aligned with the vectors 'up' and 'fwd'
  * even if 'up' and 'fwd' are not perpindicular, the matrix will still be orthogonal
  */
-void mat4_orient(mat4 m_in, vec3 up, vec3 fwd)
+void mat4_orient(mat4 m_in, vec3 *up, vec3 *fwd)
 {
     vec3 s;
     vec3 u;
     vec3 f;
     mat4 m;
 
-    memcpy(u, up, sizeof(vec3));
-    memcpy(f, fwd, sizeof(vec3));
-    vec3_normalize(u);
-    vec3_normalize(f);
-    vec3_cross(f, u, s);
-    vec3_normalize(s);
-    vec3_cross(s, f, u);
-    vec3_normalize(u);
+    memcpy(&u, up, sizeof(vec3));
+    memcpy(&f, fwd, sizeof(vec3));
+    vec3_normalizep(&u);
+    vec3_normalizep(&f);
+    s = vec3_cross(f, u);
+    vec3_normalizep(&s);
+    u = vec3_cross(s, f);
+    vec3_normalizep(&u);
 
-    m[MAT_XX] = s[X]; 
-    m[MAT_XY] = s[Y]; 
-    m[MAT_XZ] = s[Z]; 
+    m[MAT_XX] = s.x; 
+    m[MAT_XY] = s.y; 
+    m[MAT_XZ] = s.z; 
     m[MAT_XW] = 0;
 
-    m[MAT_YX] = u[X]; 
-    m[MAT_YY] = u[Y]; 
-    m[MAT_YZ] = u[Z]; 
+    m[MAT_YX] = u.x; 
+    m[MAT_YY] = u.y; 
+    m[MAT_YZ] = u.z; 
     m[MAT_YW] = 0;
 
-    m[MAT_ZX] = -f[X];
-    m[MAT_ZY] = -f[Y]; 
-    m[MAT_ZZ] = -f[Z]; 
+    m[MAT_ZX] = -f.x;
+    m[MAT_ZY] = -f.y; 
+    m[MAT_ZZ] = -f.z; 
     m[MAT_ZW] = 0;
 
     m[MAT_WX] = 0; 
