@@ -1,12 +1,12 @@
 #version 130
 
+uniform vec3 light_color;
+uniform vec3 light_direction;
+
 uniform sampler2D inDepth;
 uniform sampler2D inColor; 
 uniform sampler2D inNormal;
 uniform sampler2D inLight;
-
-uniform vec3 light_color;
-uniform vec3 light_direction;
 
 smooth in vec2 f_uv; 
 

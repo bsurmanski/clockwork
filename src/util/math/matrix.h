@@ -67,6 +67,7 @@ typedef float mat2[4];
 typedef float mat3[9];
 typedef float mat4[16];
 
+void mat3_identity(mat3 m);
 void mat3_rotate(mat3 m, float x, float y, float z);
 void mat3_translate(mat3 m, float x, float y);
 

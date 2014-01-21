@@ -18,6 +18,14 @@
 #include "vec.h"
 #include "matrix.h"
 
+void mat3_identity(mat3 m)
+{
+    m[0] = m[4] = m[8] = 1.0f;
+    m[1] = m[2] = 0.0f;
+    m[3] = m[5] = 0.0f;
+    m[6] = m[7] = 0.0f;
+}
+
 void mat3_rotate(mat3 m, float rx, float ry, float rz)
 {
     mat3 auxx;

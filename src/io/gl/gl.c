@@ -49,6 +49,7 @@ static vec3 ambient;
 
 GLuint UNIT_SQUARE_VAO;
 GLuint UNIT_SQUARE;
+GLBBuffer *glbQUAD;
 static const gl_vertex_t UNIT_SQUARE_VERTS[] = 
 {
     // Triangle 1
@@ -87,14 +88,11 @@ static const gl_vertex_t UNIT_SQUARE_VERTS[] =
 
 //TODO: remove bind functions.
 static void gl_bindshader(struct Shader *shader);
-static void gl_bindmesh(struct Mesh *mesh);
 static void gl_bindtexture(struct Texture *tex, int texture_unit);
 static void gl_bindtextures(struct Texture **tex, int n);
 static void gl_bindframebuffer(struct Framebuffer *f, enum Framebuffer_IO io);
 static void gl_unbindshader(void);
-static void gl_unbindmesh(void);
 static void gl_unbindtexture(int texture_unit);
-static void gl_unbindtextures(void);
 static void gl_unbindframebuffer(enum Framebuffer_IO io);
 
 void gl_init(int win_w, int win_h)
@@ -179,6 +177,19 @@ void gl_init(int win_w, int win_h)
     glbProgramAttachNewShaderSourceFile(glbdrawmodel, 
                                         "clockwork/glsl/drawmodel.fs", 
                                         GL_FRAGMENT_SHADER);
+
+    struct GLBVertexLayout vlayout[] = 
+    {
+        {3, GL_FLOAT,           false,  32, 0},
+        {3, GL_SHORT,           true,   32, 12},
+        {2, GL_UNSIGNED_SHORT,  true,   32, 18},
+        {1, GL_UNSIGNED_SHORT,  false,  32, 22},
+        {2, GL_UNSIGNED_BYTE,   false,  32, 24},
+        {2, GL_UNSIGNED_BYTE,   true,   32, 26},
+    };
+
+    glbQUAD = glbCreateVertexBuffer(6, sizeof(gl_vertex_t), 
+                    UNIT_SQUARE_VERTS, 6, vlayout, GLB_STATIC_DRAW, NULL);
    
     glbframebuffer = glbCreateFramebuffer(NULL);
     GLBTexture *fb_color[4] = {
@@ -269,25 +280,6 @@ static void gl_bindshader(struct Shader *s)
     }
 }
 
-static void gl_bindmesh(struct Mesh *mesh)
-{
-    if(!mesh)
-    {
-        gl_unbindmesh();
-        return;
-    }
-
-    acv_mesh = mesh;
-
-    glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ibo);
-
-    if(acv_shader && acv_mesh)
-    {
-        gl_bindshaderattributes();
-    }
-}
-
 static void gl_bindtexture(Texture *tex, int tunit)
 {
     assert(tunit < MAX_TEX);
@@ -344,24 +336,10 @@ static void gl_unbindshader(void)
     glUseProgram(0);
 }
 
-static void gl_unbindmesh(void)
-{
-    acv_mesh = NULL;
-}
-
 static void gl_unbindtexture(int tunit)
 {
     assert(tunit < MAX_TEX);
     acv_texture[tunit] = NULL;
-}
-
-static void gl_unbindtextures(void)
-{
-    int i;
-    for(i = 0; i < MAX_TEX; i++)
-    {
-        gl_unbindtexture(i);
-    }
 }
 
 static void gl_unbindframebuffer(enum Framebuffer_IO io)
@@ -402,6 +380,7 @@ static int acv_framebuffer_h(int fb)
 /* lighting {{{*/
 void gl_lightambient(float color[3])
 {
+    /*{{{ XXX REMOVE*/
     static Shader *lightambient;
     gl_swapioframebuffers();
 
@@ -439,10 +418,9 @@ void gl_lightambient(float color[3])
     shader_set_parameter(lightambient, "ambient_color", color, sizeof(float[3]));
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
-    gl_unbindshader();
+    gl_unbindshader();/*}}}*/
 
-
-    ambient = vec3_add(color, ambient);
+    //ambient = vec3_addp(color, &ambient);
 }
 
 //TODO: buffer directional light, drawing 8/16 lights at a time
@@ -451,10 +429,17 @@ void gl_lightdirect(float color[3], float dir[3])
 {
     static Shader *lightdirect;
     gl_swapioframebuffers();
+    static GLBProgram *program;
 
     static int once = 1;
     if(once)
     {
+        program = glbCreateProgram(NULL);
+        glbProgramAttachNewShaderSourceFile(program, 
+                "clockwork/glsl/lighting/direct.vs", GLB_VERTEX_SHADER);
+        glbProgramAttachNewShaderSourceFile(program, 
+                "clockwork/glsl/lighting/direct.fs", GLB_FRAGMENT_SHADER);
+
         lightdirect = malloc(sizeof(Shader));
         shader_init(lightdirect, "clockwork/glsl/lighting/direct");
         shader_add_attrib(lightdirect, "position", 2, GL_FLOAT, false, 32, (void*) 0);
@@ -477,6 +462,12 @@ void gl_lightdirect(float color[3], float dir[3])
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
     gl_unbindshader();
+
+    //glbProgramOutput(program, ...);
+    glbProgramUniform(program, GL_FRAGMENT_SHADER, 0, sizeof(float[3]), color);
+    glbProgramUniform(program, GL_FRAGMENT_SHADER, 1, sizeof(float[3]), dir);
+    //glbProgramDraw(program, ...array...);
+
 }
 /*}}}*/
 
@@ -625,6 +616,7 @@ void gl_drawbones(Armature *arm, int frame, float *mMat, float *vMat, float *pMa
 /*draw mesh {{{*/
 void mesh_draw_t(struct Mesh *mesh, struct Texture *texture, float *mMat, float *vMat, float *pMat)
 {
+    /*
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
 
@@ -657,6 +649,8 @@ void mesh_draw_t(struct Mesh *mesh, struct Texture *texture, float *mMat, float 
 
     gl_unbindtexture(0);
     gl_unbindshader();
+    */
+    assert(false && "TODO: convert to GLB");
 }
 
 void mesh_draw_ts   (struct Mesh *mesh, 
@@ -682,8 +676,10 @@ void mesh_draw_ts   (struct Mesh *mesh,
     static bool TRUE = 1;
     glbProgramTexture(glbdrawmodel, GLB_FRAGMENT_SHADER, 0, tex);
     glbProgramUniform(glbdrawmodel, GLB_VERTEX_SHADER, 0, sizeof(bool), &TRUE);
-    glbProgramUniform(glbdrawmodel, GLB_VERTEX_SHADER, 1, sizeof(float[16]), t_matrix);
-    glbProgramUniform(glbdrawmodel, GLB_VERTEX_SHADER, 2, sizeof(float[16]) * arm->nbones, bmat);
+    glbProgramUniformMatrix(glbdrawmodel, GLB_VERTEX_SHADER, 1, 
+                            sizeof(float[16]), true, t_matrix);
+    glbProgramUniformMatrix(glbdrawmodel, GLB_VERTEX_SHADER, 2, 
+                            sizeof(float[16]) * arm->nbones, true, bmat);
     glbProgramOutput(glbdrawmodel, glbframebuffer);
     glbProgramDrawIndexed(glbdrawmodel, mesh->vbuffer, mesh->ibuffer);
 }
@@ -707,8 +703,10 @@ void model_draw(struct Model *model, float *mMat, float *vMat, float *pMat)
         static int FALSE = 0;
         const ModelFeature *feature = varray_get(&model->features, i);
         glbProgramTexture(glbdrawmodel, GLB_FRAGMENT_SHADER, 0, feature->color);
-        glbProgramUniform(glbdrawmodel, GLB_VERTEX_SHADER, 0, sizeof(int), &FALSE);
-        glbProgramUniform(glbdrawmodel, GLB_VERTEX_SHADER, 1, sizeof(float[16]), t_matrix);
+        glbProgramUniformMatrix(glbdrawmodel, GLB_VERTEX_SHADER, 0, 
+                sizeof(int), true, &FALSE);
+        glbProgramUniformMatrix(glbdrawmodel, GLB_VERTEX_SHADER, 1, 
+                sizeof(float[16]), true, t_matrix);
         glbProgramDrawIndexed(glbdrawmodel, feature->mesh->vbuffer, feature->mesh->ibuffer);
 
     }

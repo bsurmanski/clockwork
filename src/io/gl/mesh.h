@@ -10,16 +10,8 @@
 #define _MESH_H
 
 #include <glb/glb.h>
-#include <GL/glfw.h>
-#include <GL/gl.h>
 
 #include <stdint.h>
-
-#include "io/gl/gl.h"
-#include "util/math/vec.h"
-
-#define FMT_MDL 4
-#define BONE_NONE 255
 
 /**
  * @struct mesh_header
@@ -42,8 +34,8 @@ typedef struct Mesh_header {
 //TODO: duplication of gl_vertex in 'gl.h'
 typedef struct Mesh_vert {
     float       position[3];
-    uhvec3      normal;        
-    uhvec2      uv;              ///< UV coordinate on texture. represented as uhvec2 @see uhvec2
+    int16_t     normal[3];        
+    uint16_t    uv[2];         ///< UV coordinate on texture. represented as uhvec2 @see uhvec2
     uint16_t    material;      //TODO use
     uint8_t     boneid[2];
     uint8_t     boneweight[2];
@@ -65,6 +57,8 @@ typedef struct Mesh_face {
 typedef struct Mesh { 
     uint32_t    nverts;             ///< number of vertices. @see mesh_vert
     uint32_t    nfaces;             ///< number of faces. @see mesh_face
+    uint32_t    maxverts;           ///< number of vertices allocated
+    uint32_t    maxfaces;           ///< number of faces allocated
     uint16_t    material;           ///< currently unused
     uint8_t     nbones;
     uint8_t     PADDING[1];
@@ -72,13 +66,16 @@ typedef struct Mesh {
     struct Mesh_face *faces;        ///< array of faces
     struct GLBBuffer *vbuffer;
     struct GLBBuffer *ibuffer;
-    GLuint vao;                     ///< OpenGL vertex array object to hold bound state
-    GLuint      vbo;                ///< OpenGL vertex buffer object handle (GL_ARRAY_BUFFER)
-    GLuint      ibo;                ///< OpenGL index buffer object handle (GL_ELEMENT_ARRAY_BUFFER)
 } Mesh;
 
-int mesh_initff(Mesh *m, const char *filenm);   //
+int mesh_load(Mesh *m, const char *filenm);   //
+void mesh_init(Mesh *m, int nverts, Mesh_vert *verts, int nfaces, Mesh_face *faces);
 void mesh_finalize(Mesh *m);                  //
+
+void mesh_reserveVertices(Mesh *m, int n);
+void mesh_reserveFaces(Mesh *m, int n);
+void mesh_addVertices(Mesh *m, int n, Mesh_vert *vert);
+void mesh_addFaces(Mesh *m, int n, Mesh_face *face);
 
 void mesh_commit(Mesh *m);
 void mesh_write(Mesh *m, const char *filenm);
